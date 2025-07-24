@@ -1,0 +1,35 @@
+// src/App.jsx
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import DashboardLayout from './layouts/DashboardLayout'; 
+import DashboardPage from './pages/DashboardPage';   
+import InputJadwalPage from './pages/InputJadwalPage';
+import LihatJadwalPage from './pages/LihatJadwalPage';
+import PlanPreviewPage from './pages/PlanPreviewPage';
+import ProtectedRoute from './components/ProtectedRoute';
+
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<LoginPage />} />
+
+        {/* Buat rute pembungkus yang dijaga oleh ProtectedRoute */}
+        <Route element={<ProtectedRoute />}>
+          {/* Semua rute di dalam sini sekarang dilindungi */}
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="input-jadwal" element={<InputJadwalPage />} />
+            <Route path="lihat-jadwal" element={<LihatJadwalPage />} />
+            <Route path='plan-preview' element={<PlanPreviewPage />} />
+          </Route>
+        </Route>
+        
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
