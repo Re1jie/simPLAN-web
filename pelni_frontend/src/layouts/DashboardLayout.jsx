@@ -76,7 +76,7 @@ const Sidebar = () => {
             
             <div className="flex-grow" />
 
-            <button className="rounded-lg bg-red-600 py-2 px-4 hover:bg-red-700">
+            <button className="rounded-lg py-2 px-4 hover:bg-red-700">
             Logout
             </button>
         </div>
