@@ -376,7 +376,8 @@ function PlanPreviewPage() {
                 </table>
                 </div>
                 {conflicts.length > 0 && (
-                    <div className="mt-8 p-4 bg-yellow-100 border-l-4 border-yellow-500">
+                    <div className="mt-10 overflow-auto max-h-[80vh] bg-white shadow-md rounded-lg">
+                        <div className="p-4 bg-yellow-100">
                         <h2 className="text-xl font-bold text-yellow-800 mb-4">🚨 Peringatan Jadwal Berbenturan</h2>
                         <div className="space-y-3">
                             {conflicts.map((c, index) => (
@@ -396,7 +397,8 @@ function PlanPreviewPage() {
                                 </div>
                             ))}
                         </div>
-                    </div>
+                        </div>
+                    </div>      
                 )}
         </div>
     );
