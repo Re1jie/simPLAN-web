@@ -323,23 +323,23 @@ function PlanPreviewPage() {
             <h1 className="text-3xl font-bold mb-6">Plan Preview</h1>
                 <div className="overflow-auto max-h-[80vh] bg-white shadow-md rounded-lg">
                 <table className="table-fixed w-full border-collapse">
-                    <thead className="bg-gray-200 sticky top-0 z-20">
+                    <thead className="bg-gray-600 text-white sticky top-0 z-20 border-b">
                     <tr>
-                        <th className="border w-8 p-2 sticky left-0 bg-gray-200 z-10">NO</th>
-                        <th className="border w-48 p-2 sticky left-8 bg-gray-200 z-10">NAMA KAPAL</th>
+                        <th className="w-8 p-2 sticky left-0 bg-gray-600 text-white z-10 shadow-[inset_-1px_0_0_0_#A0AEC0]">NO</th>
+                        <th className="w-48 p-2 sticky left-8 bg-gray-600 text-white z-10 shadow-[inset_-1px_0_0_0_#A0AEC0]">NAMA KAPAL</th>
                         {processedData.dateHeaders.map(date => (
-                        <th key={date} className="border w-32 p-2">
+                        <th key={date} className="border-r w-32 p-2">
                             <div>{format(date, 'd-MMM-yy', { locale: id })}</div>
                             <div>{format(date, 'eeee', { locale: id })}</div>
                         </th>
                         ))}
                     </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="bg-white">
                     {processedData.kapalList.map((kapal, index) => (
                         <tr key={kapal} className="text-center">
-                        <td className="border w-8 p-2 sticky left-0 bg-white z-10">{index + 1}</td>
-                        <td className="border w-48 p-2 sticky left-8 bg-white z-10">{kapal}</td>
+                        <td className="border-b border-black w-8 p-2 sticky left-0 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{index + 1}</td>
+                        <td className="border-b border-black w-48 p-2 sticky left-8 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{kapal}</td>
                         {processedData.dateHeaders.map(date => {
                             const dateKey = format(date, 'dd-MMM-yy', { locale: id });
                             const jadwalDiHariIni = processedData.dataMatriks[kapal]?.[dateKey];
@@ -347,7 +347,7 @@ function PlanPreviewPage() {
                                 isCellInConflict(dateKey, kapal, item.pelabuhan)
                             );
                             return (
-                                <td key={date} className="border w-32 p-1 align-top">
+                                <td key={date} className="border-b border-r border-black w-32 p-1 align-top">
                                 {jadwalDiHariIni?.map((item, idx) => {
                                     
                                     const isThisItemInConflict = isCellInConflict(dateKey, kapal, item.pelabuhan);
