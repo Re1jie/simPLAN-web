@@ -1,0 +1,78 @@
+services:
+  # 1. Kontainer Aplikasi Laravel (PHP-FPM)
+  app:
+    build:
+      context: ./pelni_backend
+      dockerfile: Dockerfile
+    container_name: simplan_app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./pelni_backend:/var/www
+    networks:
+      - simplan-network
+
+  # 2. Kontainer Web Server (Nginx)
+  webserver:
+    image: nginx:alpine
+    container_name: simplan_webserver
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./pelni_backend:/var/www
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - simplan-network
+
+  # 3. Kontainer Database (MariaDB)
+  db:
+    image: mariadb:10.6
+    container_name: simplan_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+    volumes:
+      - db-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - simplan-network
+
+  # 4. Kontainer Frontend (React/Vite Dev Server)
+  frontend:
+    build:
+      context: ./pelni_frontend
+      dockerfile: Dockerfile
+    container_name: simplan_frontend
+    restart: unless-stopped
+    volumes:
+      - ./pelni_frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    networks:
+      - simplan-network
+  
+  # 5. Kontainer Redis
+  redis:
+    image: redis:alpine
+    container_name: simplan_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - simplan-network
+
+# Jaringan untuk komunikasi antar kontainer
+networks:
+  simplan-network:
+    driver: bridge
+
+# Volume untuk persistensi data database
+volumes:
+  db-data:
+    driver: local
