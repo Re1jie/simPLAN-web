@@ -100,8 +100,14 @@ function InputJadwalPage() {
     const [namaKapal, setNamaKapal] = useState('');
     const [rute, setRute] = useState('');
 
-    const handleConfirm = async () => {
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
+
+    const handleConfirm = async (e) => {
         setIsLoading(true);
+        e.preventDefault();
+        setMessage('');
+        setError('');
 
         if (!voyage || !namaKapal || !rawText) {
             alert("Silakan isi nomor voyage, nama kapal, dan data jadwal.");
@@ -135,11 +141,12 @@ function InputJadwalPage() {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }
             );
-            alert('Jadwal berhasil disimpan!');
-            navigate('/dashboard/input-jadwal');
+            setMessage('Periode docking berhasil disimpan!');            
+            
         } catch (error) {
-            console.error("Gagal mengirim data ke backend:", error);
-            alert("Terjadi error saat mengirim data ke server.");
+            const errorMessage = err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.';
+            setError(errorMessage);
+            console.error(err);
         } finally {
             setIsLoading(false);
         }
@@ -148,10 +155,16 @@ function InputJadwalPage() {
     return (
         <div>
             <h1 className="text-3xl font-bold">Input Jadwal Voyage</h1>
-            <p className="mt-2 text-gray-600">
-                Masukkan nama kapal, lalu salin data jadwal dari Excel ke dalam kotak di bawah ini.
-            </p>
-            
+            {message && (
+                <div className="mt-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-md mb-6" role="alert">
+                    {message}
+                </div>
+            )}
+            {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-md mb-6" role="alert">
+                    {error}
+                </div>
+            )}         
             {/* BARU: Grid diubah menjadi 3 kolom untuk mengakomodasi Rute */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <div>
