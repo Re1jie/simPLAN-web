@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // Akan kita gunakan nanti
+import { useNavigate } from 'react-router-dom';
+import api from '../api';
 
 // Komponen Logo PELNI (bisa diganti dengan file gambar Anda)
 import PelniLogoSVG from '../assets/PELNI_2023.svg?url';
@@ -31,7 +32,7 @@ function LoginPage() {
 
     try {
       // Kirim request ke API Laravel Anda
-      const response = await axios.post('http://127.0.0.1:8000/api/login', {
+      const response = await api.post('/login', {
         email: email,
         password: password,
       });

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { format, eachDayOfInterval, startOfDay, endOfDay } from 'date-fns';
 import { id } from 'date-fns/locale';
+import api from '../api';
 
 // Definisikan warna untuk setiap pelabuhan
 const PORT_COLORS = {
@@ -287,7 +288,7 @@ function PlanPreviewPage() {
             const token = localStorage.getItem('authToken');
             if (!token) { navigate('/login'); return; }
             try {
-                const response = await axios.get('http://127.0.0.1:8000/api/jadwal', {
+                const response = await api.get('/jadwal', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 // Setelah data diterima, langsung proses dengan logika baru

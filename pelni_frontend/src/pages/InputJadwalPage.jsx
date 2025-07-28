@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import api from '../api';
 
 // DAFTAR NAMA KAPAL
 const DAFTAR_KAPAL = [
@@ -123,7 +124,7 @@ function InputJadwalPage() {
         }
 
         try {
-            await axios.post('http://127.0.0.1:8000/api/jadwal/batch', 
+            await api.post('/jadwal/batch', 
                 {
                     voyage: voyage,
                     nama_kapal: namaKapal,

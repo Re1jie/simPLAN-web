@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import api from '../api';
 
 function LihatJadwalPage() {
     // STATE
@@ -56,7 +57,7 @@ function LihatJadwalPage() {
         if (!token) { navigate('/login'); return; }
         setLoading(true); // Set loading di awal fetch
         try {
-            const response = await axios.get('http://127.0.0.1:8000/api/jadwal', {
+            const response = await api.get('/jadwal', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             setAllJadwal(response.data);
@@ -78,7 +79,7 @@ function LihatJadwalPage() {
         if (isConfirmed) {
             const token = localStorage.getItem('authToken');
             try {
-                await axios.delete('http://127.0.0.1:8000/api/jadwal/by-voyage', {
+                await api.delete('/jadwal/by-voyage', {
                     headers: { 'Authorization': `Bearer ${token}` },
                     data: { nama_kapal: namaKapal, voyage: voyage }
                 });
