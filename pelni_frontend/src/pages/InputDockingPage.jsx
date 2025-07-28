@@ -37,16 +37,25 @@ function InputDockingPage() {
     const [endDateTime, setEndDateTime] = useState('');
     const [detailDocking, setDetailDocking] = useState('');
 
+    const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
         setMessage('');
         setError('');
 
         if (!namaKapal || !startDateTime || !endDateTime || !detailDocking) {
             setError('Semua field wajib diisi.');
+            setIsLoading(false);
+            return;
+        }
+
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            navigate('/login');
             return;
         }
 
@@ -71,15 +80,19 @@ function InputDockingPage() {
             const errorMessage = err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.';
             setError(errorMessage);
             console.error(err);
+        } finally {
+            setIsLoading(false);
         }
     };
+
+    const isFormInvalid = !namaKapal || !startDateTime || !endDateTime || !detailDocking;
 
     return (
         <div>
             <h1 className="text-3xl font-bold mb-6">Input Periode Docking</h1>
 
             {message && (
-                <div className="mt-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-md mb-6" role="alert">
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-md mb-6" role="alert">
                     {message}
                 </div>
             )}
@@ -131,9 +144,10 @@ function InputDockingPage() {
                     <div className="text-right">
                         <button
                             type="submit"
-                            className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                            disabled={isLoading || isFormInvalid}
+                            className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            Simpan Data
+                            {isLoading ? 'Menyimpan...' : 'Simpan Data'}
                         </button>
                     </div>
                 </form>
@@ -143,4 +157,3 @@ function InputDockingPage() {
 }
 
 export default InputDockingPage;
-    
