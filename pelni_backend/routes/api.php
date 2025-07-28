@@ -11,9 +11,10 @@ Route::get('/user', function (Request $request) {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/jadwal', [JadwalController::class, 'index']);
-    Route::post('/jadwal', [JadwalController::class, 'store']); // Untuk satu data
-    Route::post('/jadwal/batch', [JadwalController::class, 'storeBatch']); // <-- Tambahkan ini untuk banyak data
+    Route::post('/jadwal', [JadwalController::class, 'store']);
+    Route::post('/jadwal/batch', [JadwalController::class, 'storeBatch']);
     Route::delete('/jadwal/by-voyage', [JadwalController::class, 'destroyByVoyage']);
+    Route::post('/logout', [AuthController::class, 'logout']);
 });
 
 Route::post('/login', [AuthController::class, 'login']);

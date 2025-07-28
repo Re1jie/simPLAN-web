@@ -1,15 +1,32 @@
 // src/layouts/DashboardLayout.jsx
 
 import PelniLogoSVG from '../assets/PELNI_2023.svg?url';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import api from '../api';
 
 // Definisikan komponen logo PELNI
 const PelniLogo = () => (
     <img src={PelniLogoSVG} alt="Pelni Logo" className="h-10 mt-4"/> // Gunakan className untuk styling
 );
 
-// Komponen Sidebar sederhana berdasarkan desain Anda
 const Sidebar = () => {
+    const navigate = useNavigate();
+    
+    // Fungsi untuk menangani logout
+    const handleLogout = async () => {
+        const token = localStorage.getItem('authToken');
+        try {
+            await api.post('/logout', {}, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        } catch (error) {
+            console.error('Gagal logout di server:', error);
+        } finally {
+            localStorage.removeItem('authToken');
+            navigate('/login');
+        }
+    };
+
     // Data user & navigasi bisa dibuat dinamis nanti
     return (
         <div className="flex h-screen w-64 flex-col bg-[#1A2238] p-6 text-white">
@@ -76,8 +93,11 @@ const Sidebar = () => {
             
             <div className="flex-grow" />
 
-            <button className="rounded-lg py-2 px-4 hover:bg-red-700">
-            Logout
+            <button
+                onClick={handleLogout}
+                className="rounded-lg py-2 px-4 hover:bg-red-700"
+            >
+                Logout
             </button>
         </div>
     );
