@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, eachDayOfInterval, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
+import { format, eachDayOfInterval, startOfDay, endOfDay, isWithinInterval, differenceInCalendarDays, isSameDay } from 'date-fns';
 import { id } from 'date-fns/locale';
 import api from '../api';
 
@@ -357,54 +357,63 @@ function PlanPreviewPage() {
                     </tr>
                     </thead>
                     <tbody className="bg-white">
-                    {processedData.kapalList.map((kapal, index) => (
-                        <tr key={kapal} className="text-center">
-                        <td className="border-b border-black w-8 p-2 sticky left-0 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{index + 1}</td>
-                        <td className="border-b border-black w-48 p-2 sticky left-8 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{kapal}</td>
-                        {processedData.dateHeaders.map(date => {
-                            const dateKey = format(date, 'dd-MMM-yy', { locale: id });
-                            const jadwalDiHariIni = processedData.dataMatriks[kapal]?.[dateKey];
-                            const dockingInfo = getDockingInfoForCell(kapal, date); // Cek info docking
-
-                            if (dockingInfo) {
-                                return (
-                                    <td key={dateKey} className="border-b border-r border-black w-32 p-1 align-top bg-black text-white relative">
-                                        <div className="flex items-center justify-center h-full text-xs font-bold text-center">
-                                            {dockingInfo.detail_docking}
-                                        </div>
-                                    </td>
-                                );
-                            }
-
-                            const hasConflict = jadwalDiHariIni?.some(item =>
-                                isCellInConflict(dateKey, kapal, item.pelabuhan)
-                            );
-                            return (
-                                <td key={date} className="border-b border-r border-black w-32 p-1 align-top">
-                                {jadwalDiHariIni?.map((item, idx) => {
+                    {processedData.kapalList.map((kapal, index) => {
+                        let skipDays = 0;
+                        return (
+                            <tr key={kapal} className="text-center">
+                                <td className="border-b border-black w-8 p-2 sticky left-0 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{index + 1}</td>
+                                <td className="border-b border-black w-48 p-2 sticky left-8 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{kapal}</td>
+                                {processedData.dateHeaders.map(date => {
                                     
-                                    const isThisItemInConflict = isCellInConflict(dateKey, kapal, item.pelabuhan);
+                                    if (skipDays > 0) {
+                                        skipDays--;
+                                        return null;
+                                    }
 
+                                    const dateKey = format(date, 'dd-MMM-yy', { locale: id });
+                                    const dockingInfo = getDockingInfoForCell(kapal, date);
+
+                                    if (dockingInfo) {
+                                        const startDate = startOfDay(new Date(dockingInfo.waktu_mulai_docking));
+                                        
+                                        if (isSameDay(startOfDay(date), startDate)) {
+                                            const endDate = startOfDay(new Date(dockingInfo.waktu_selesai_docking));
+                                            const colspan = differenceInCalendarDays(endDate, startDate) + 1;
+                                            skipDays = colspan - 1;
+
+                                            return (
+                                                <td key={dateKey} colSpan={colspan} className="border-b border-r border-black p-1 align-middle bg-black text-white relative">
+                                                    <div className="flex items-center justify-center h-full text-3xl font-bold text-center">
+                                                        {dockingInfo.detail_docking}
+                                                    </div>
+                                                </td>
+                                            );
+                                        }
+                                        return null; 
+                                    }
+
+                                    const jadwalDiHariIni = processedData.dataMatriks[kapal]?.[dateKey];
                                     return (
-                                    // Ganti 'blinking-conflict' dengan 'animate-blink'
-                                    <div 
-                                        key={idx} 
-                                        className={`mb-1 rounded ${isThisItemInConflict ? 'animate-blink' : ''}`}
-                                    >
-                                        <div className={`${getPortColorClass(item.pelabuhan)} text-xs font-bold rounded-t p-1`}>
-                                        {item.pelabuhan}
-                                        </div>
-                                        <div className="bg-gray-100 text-xs rounded-b p-1">
-                                        {item.waktu}
-                                        </div>
-                                    </div>
+                                        <td key={dateKey} className="border-b border-r border-black w-32 p-1 align-top">
+                                            {jadwalDiHariIni?.map((item, idx) => {
+                                                const isThisItemInConflict = isCellInConflict(dateKey, kapal, item.pelabuhan);
+                                                return (
+                                                    <div key={idx} className={`mb-1 rounded ${isThisItemInConflict ? 'animate-blink' : ''}`}>
+                                                        <div className={`${getPortColorClass(item.pelabuhan)} text-xs font-bold rounded-t p-1`}>
+                                                            {item.pelabuhan}
+                                                        </div>
+                                                        <div className="bg-gray-100 text-xs rounded-b p-1">
+                                                            {item.waktu}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </td>
                                     );
                                 })}
-                                </td>
-                            );
-                        })}
-                        </tr>
-                    ))}
+                            </tr>
+                        );
+                    })}
                     </tbody>
                 </table>
                 </div>
