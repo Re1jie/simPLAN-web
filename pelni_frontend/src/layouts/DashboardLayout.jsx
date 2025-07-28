@@ -1,8 +1,8 @@
-// src/layouts/DashboardLayout.jsx
-
+import { useState } from 'react';
 import PelniLogoSVG from '../assets/PELNI_2023.svg?url';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import api from '../api';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 // Definisikan komponen logo PELNI
 const PelniLogo = () => (
@@ -11,24 +11,31 @@ const PelniLogo = () => (
 
 const Sidebar = () => {
     const navigate = useNavigate();
-    
-    // Fungsi untuk menangani logout
-    const handleLogout = async () => {
+    const [isModalOpen, setModalOpen] = useState(false);
+
+    const executeLogout = async () => {
         const token = localStorage.getItem('authToken');
         try {
             await api.post('/logout', {}, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            console.log('Logout dari server berhasil.');
         } catch (error) {
             console.error('Gagal logout di server:', error);
         } finally {
             localStorage.removeItem('authToken');
+            setModalOpen(false); // Tutup modal setelah selesai
             navigate('/login');
         }
+    };
+    // Fungsi untuk menangani logout
+    const handleLogoutClick = () => {
+        setModalOpen(true);
     };
 
     // Data user & navigasi bisa dibuat dinamis nanti
     return (
+        <>
         <div className="flex h-screen w-64 flex-col bg-[#1A2238] p-6 text-white">
             <PelniLogo />
             
@@ -94,12 +101,23 @@ const Sidebar = () => {
             <div className="flex-grow" />
 
             <button
-                onClick={handleLogout}
+                onClick={handleLogoutClick}
                 className="rounded-lg py-2 px-4 hover:bg-red-700"
             >
                 Logout
             </button>
+            
         </div>
+        {/* Render confirmation modal */}
+        <ConfirmationModal
+                isOpen={isModalOpen}
+                onClose={() => setModalOpen(false)}
+                onConfirm={executeLogout}
+                title="Konfirmasi Logout"
+            >
+                <p>Apakah Anda yakin ingin keluar dari sesi ini?</p>
+            </ConfirmationModal>
+        </>
     );
 };
 
