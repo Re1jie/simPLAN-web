@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PelniLogoSVG from '../assets/PELNI_2023.svg?url';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import api from '../api';
@@ -12,7 +12,33 @@ const PelniLogo = () => (
 const Sidebar = () => {
     const navigate = useNavigate();
     const [isModalOpen, setModalOpen] = useState(false);
+    const [user, setUser] = useState(null);
 
+    useEffect(() => {
+        const fetchUserData = async () => {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                try {
+                    const response = await api.get('/user', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    // Simpan seluruh data user ke state
+                    setUser(response.data); 
+                } catch (error) {
+                    console.error("Gagal mengambil data user:", error);
+                    // Jika token tidak valid, mungkin arahkan ke login
+                    if (error.response && error.response.status === 401) {
+                        navigate('/login');
+                    }
+                }
+            }
+        };
+
+        fetchUserData();
+    }, [navigate]); // Tambahkan navigate sebagai dependensi
+    
     const executeLogout = async () => {
         const token = localStorage.getItem('authToken');
         try {
@@ -24,7 +50,8 @@ const Sidebar = () => {
             console.error('Gagal logout di server:', error);
         } finally {
             localStorage.removeItem('authToken');
-            setModalOpen(false); // Tutup modal setelah selesai
+            setUser(null);
+            setModalOpen(false);
             navigate('/login');
         }
     };
@@ -41,7 +68,7 @@ const Sidebar = () => {
             
             <div className="mt-8 flex flex-col items-center">
                 <div className="h-32 w-32 rounded-full bg-gray-400"></div>
-                <p className="mt-4 rounded-lg py-0 px-4  font-semibold text-blue-300 bg-gray-700 text-[#D9D9D9 ">Halo, Fikri</p>
+                <p className="mt-4 rounded-lg py-0 px-4  font-semibold text-blue-300 bg-gray-700 text-[#D9D9D9 ">Halo, {user ? user.name : '...'}</p>
             </div>
             
             <nav className="mt-8 flex flex-col space-y-2.5">
