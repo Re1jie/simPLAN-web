@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import PelniLogoSVG from '../assets/PELNI_2023.svg?url';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import ConfirmationModal from '../components/ConfirmationModal';
 
@@ -11,8 +11,17 @@ const PelniLogo = () => (
 
 const Sidebar = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [isModalOpen, setModalOpen] = useState(false);
     const [user, setUser] = useState(null);
+    const [isInputDropdownOpen, setInputDropdownOpen] = useState(false);
+    const isInputParentActive = location.pathname.startsWith('/dashboard/input-');
+
+    useEffect(() => {
+        if (isInputParentActive) {
+            setInputDropdownOpen(true);
+        }
+    }, [isInputParentActive]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -86,18 +95,44 @@ const Sidebar = () => {
                 Dashboard
             </NavLink>
 
-            <NavLink
-                to="/dashboard/input-jadwal"
-                className={({ isActive }) =>
-                `rounded-lg py-2 px-4 text-center font-semibold ${
-                    isActive
-                    ? 'bg-[#86B6FF] text-[#1A2238]'
-                    : 'text-[#FBFCFE] hover:bg-gray-700 hover:text-[#D9D9D9]'
-                }`
-                }
-            >
-                Input Jadwal
-            </NavLink>
+            <div className="flex flex-col">
+                <button
+                    onClick={() => setInputDropdownOpen(!isInputDropdownOpen)}
+                    className={`flex w-full items-center justify-center rounded-lg py-2 px-4 text-center font-semibold ${
+                        isInputParentActive
+                        ? 'bg-[#86B6FF] text-[#1A2238]'
+                        : 'text-[#FBFCFE] hover:bg-gray-700 hover:text-[#D9D9D9]'
+                    }`}
+                >
+                    Input Jadwal
+                    {/* Ikon panah yang berputar */}
+                    <svg className={`ml-2 h-4 w-4 transform transition-transform duration-200 ${isInputDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+
+                {/* 5. Daftar link dropdown yang muncul/hilang */}
+                <div className={`mt-2 flex flex-col space-y-2 overflow-hidden transition-all duration-300 ease-in-out ${isInputDropdownOpen ? 'max-h-40' : 'max-h-0'}`}>
+                    <NavLink
+                        to="/dashboard/input-jadwal"
+                        className={({ isActive }) => `rounded-lg py-2 px-8 text-left text-sm font-semibold ${
+                            isActive
+                            ? 'bg-blue-300 text-[#1A2238]'
+                            : 'text-gray-300 hover:bg-gray-700'
+                        }`}
+                    >
+                        Input Emplooi
+                    </NavLink>
+                    <NavLink
+                        to="/dashboard/input-docking"
+                        className={({ isActive }) => `rounded-lg py-2 px-8 text-left text-sm font-semibold ${
+                            isActive
+                            ? 'bg-blue-300 text-[#1A2238]'
+                            : 'text-gray-300 hover:bg-gray-700'
+                        }`}
+                    >
+                        Input Voyage
+                    </NavLink>
+                </div>
+            </div>
 
             <NavLink
                 to="/dashboard/lihat-jadwal"
