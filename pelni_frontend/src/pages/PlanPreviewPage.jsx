@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { format, eachDayOfInterval, startOfDay, endOfDay } from 'date-fns';
+import { format, eachDayOfInterval, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { id } from 'date-fns/locale';
 import api from '../api';
 
@@ -277,6 +276,7 @@ const DAFTAR_KAPAL_LENGKAP = [
 
 function PlanPreviewPage() {
     const [processedData, setProcessedData] = useState({ dataMatriks: {}, dateHeaders: [], kapalList: [] });
+    const [dockingSchedules, setDockingSchedules] = useState([]);
     const [conflicts, setConflicts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -288,15 +288,22 @@ function PlanPreviewPage() {
             const token = localStorage.getItem('authToken');
             if (!token) { navigate('/login'); return; }
             try {
-                const response = await api.get('/jadwal', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                // Setelah data diterima, langsung proses dengan logika baru
-                const data = processJadwalData(response.data, DAFTAR_KAPAL_LENGKAP);
+                const [jadwalResponse, dockingResponse] = await Promise.all([
+                    api.get('/jadwal', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    api.get('/docking', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+
+                // Proses data jadwal
+                const data = processJadwalData(jadwalResponse.data, DAFTAR_KAPAL_LENGKAP);
                 setProcessedData(data);
 
+                // Simpan data docking
+                setDockingSchedules(dockingResponse.data);
+
+                // Proses data jadwal kapal yang konflik
                 const foundConflicts = findScheduleConflicts(data.dataMatriks);
                 setConflicts(foundConflicts);
+
             } catch (err) {
                 console.error("Gagal mengambil data jadwal:", err);
                 setError('Gagal mengambil data dari server.');
@@ -309,6 +316,19 @@ function PlanPreviewPage() {
 
     if (loading) { return <div className="text-center p-8">Memuat data jadwal...</div>; }
     if (error) { return <div className="text-center p-8 text-red-500">{error}</div>; }
+
+    const getDockingInfoForCell = (kapal, date) => {
+        for (const schedule of dockingSchedules) {
+            if (schedule.nama_kapal === kapal) {
+                const start = new Date(schedule.waktu_mulai_docking);
+                const end = new Date(schedule.waktu_selesai_docking);
+                if (isWithinInterval(startOfDay(date), { start: startOfDay(start), end: startOfDay(end) })) {
+                    return schedule; // Kembalikan seluruh objek schedule jika ada docking
+                }
+            }
+        }
+        return null; // Kembalikan null jika tidak ada docking
+    };
 
     const isCellInConflict = (dateKey, kapal, pelabuhan) => {
         return conflicts.some(c => 
@@ -344,6 +364,18 @@ function PlanPreviewPage() {
                         {processedData.dateHeaders.map(date => {
                             const dateKey = format(date, 'dd-MMM-yy', { locale: id });
                             const jadwalDiHariIni = processedData.dataMatriks[kapal]?.[dateKey];
+                            const dockingInfo = getDockingInfoForCell(kapal, date); // Cek info docking
+
+                            if (dockingInfo) {
+                                return (
+                                    <td key={dateKey} className="border-b border-r border-black w-32 p-1 align-top bg-black text-white relative">
+                                        <div className="flex items-center justify-center h-full text-xs font-bold text-center">
+                                            {dockingInfo.detail_docking}
+                                        </div>
+                                    </td>
+                                );
+                            }
+
                             const hasConflict = jadwalDiHariIni?.some(item =>
                                 isCellInConflict(dateKey, kapal, item.pelabuhan)
                             );

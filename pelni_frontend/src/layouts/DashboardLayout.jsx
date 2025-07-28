@@ -129,7 +129,7 @@ const Sidebar = () => {
                             : 'text-gray-300 hover:bg-gray-700'
                         }`}
                     >
-                        Input Voyage
+                        Input Docking
                     </NavLink>
                 </div>
             </div>
