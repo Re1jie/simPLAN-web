@@ -508,10 +508,27 @@ function PlanPreviewPage() {
                 </tbody>
             </table>
         </div>
+        <div className="mt-5 flex items-center justify-end mb-6 space-x-4">            
+            <button
+                onClick={() => {
+                    document.getElementById('jadwal-bentrok-section')
+                        ?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow"
+            >
+                Cek Jadwal Bentrok
+            </button>
+            <button
+                // onClick={handleGoToToday}
+                className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow"
+            >
+                Push ke Plan
+            </button>
+        </div>
 
         {/* --- Bagian Peringatan Konflik (tidak berubah) --- */}
         {conflicts.length > 0 && (
-            <div className="mt-10">
+            <div id="jadwal-bentrok-section" className="mt-10">
                 <div className="p-4 bg-yellow-100 rounded-lg shadow-inner">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-yellow-800">🚨 Peringatan Jadwal Berbenturan</h2>
