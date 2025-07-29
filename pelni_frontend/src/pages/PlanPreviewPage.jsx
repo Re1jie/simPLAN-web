@@ -278,9 +278,30 @@ const ConflictCard = ({ conflict }) => {
                 <h3 className="font-bold text-lg text-gray-800">
                     Konflik di pelabuhan <span className="text-red-600">{conflict.port}</span>
                 </h3>
-                <span className="text-md font-semibold bg-gray-200 text-gray-700 px-2 py-1 rounded">
-                    {conflict.date}
-                </span>
+                <div className="flex items-center gap-2">
+                    <span className="text-md font-semibold bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                        {conflict.date}
+                    </span>
+                    <button
+                        onClick={() => {
+                            // Normalisasi dateKey agar sama formatnya dengan id header di tabel
+                            const targetId = `header-${conflict.date}`;
+                            const el = document.getElementById(targetId);
+                            if (el) {
+                                el.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'nearest',
+                                    inline: 'center'
+                                });
+                            } else {
+                                console.warn("Kolom tanggal tidak ditemukan:", targetId);
+                            }
+                        }}
+                        className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                    >
+                        Cek
+                    </button>
+                </div>
             </div>
 
             {/* Jika tidak diperluas dan lebih dari 2 kapal */}
