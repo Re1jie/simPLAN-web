@@ -165,7 +165,12 @@ const Sidebar = () => {
 
                     <NavLink to="/dashboard/plan-preview" className={menuItemClass}>
                         <LayoutDashboard size={18} />
-                        Plan Preview
+                        Plan (Copy)
+                    </NavLink>
+
+                    <NavLink to="/dashboard/plan-public" className={menuItemClass}>
+                        <LayoutDashboard size={18} />
+                        Plan (Public)
                     </NavLink>
                 </nav>
 
