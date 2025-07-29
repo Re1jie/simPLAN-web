@@ -3,15 +3,7 @@ import PelniLogoSVG from '../assets/PELNI_2023.svg?url';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import ConfirmationModal from '../components/ConfirmationModal';
-import {
-  Home,
-  ChevronDown,
-  CalendarDays,
-  Dock,
-  Eye,
-  LayoutDashboard,
-  LogOut,
-} from "lucide-react";
+import { Home, ChevronDown, CalendarDays, Dock, Eye, LayoutDashboard, LogOut } from "lucide-react";
 import clsx from "clsx";
 
 
