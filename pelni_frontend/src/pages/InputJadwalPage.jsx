@@ -143,7 +143,7 @@ function InputJadwalPage() {
             );
             setMessage('Periode docking berhasil disimpan!');            
             
-        } catch (error) {
+        } catch (err) {
             const errorMessage = err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.';
             setError(errorMessage);
             console.error(err);

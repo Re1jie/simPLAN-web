@@ -26,7 +26,7 @@ class JadwalController extends Controller
         try {
             $this->firebase = (new Factory)
                 ->withServiceAccount($serviceAccountPath)
-                ->withDatabaseUri('https://simplan-app-record-default-rtdb.firebaseio.com/');
+                ->withDatabaseUri('https://simplan-app-record-default-rtdb-default-rtdb.firebaseio.com/');
 
             $this->database = $this->firebase->createDatabase();
         } catch (\Exception $e) {
