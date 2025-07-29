@@ -5,11 +5,67 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\Jadwal;
 use Carbon\Carbon;
+use Kreait\Firebase\Factory;
+use Kreait\Firebase\ServiceAccount;
+
 
 class JadwalController extends Controller
 {
+    private $firebase;
+    private $database;
+    private $dbName = 'activity_log';
+
+    public function __construct()
+    {
+        // Inisialisasi Firebase
+        $serviceAccountPath = storage_path('app/simplan-app-record-firebase-adminsdk-fbsvc-bd74864ac0.json');
+
+        try {
+            $this->firebase = (new Factory)
+                ->withServiceAccount($serviceAccountPath)
+                ->withDatabaseUri('https://simplan-app-record-default-rtdb.firebaseio.com/');
+
+            $this->database = $this->firebase->createDatabase();
+        } catch (\Exception $e) {
+            // Jika inisialisasi Firebase gagal, catat error tapi jangan hentikan aplikasi
+            Log::error('Koneksi Firebase Gagal: ' . $e->getMessage());
+            $this->database = null; // Set database menjadi null agar method lain tidak error
+        }
+    }
+
+    /**
+     * Method privat untuk mencatat aktivitas ke Firebase.
+     *
+     * @param string $action Deskripsi aksi yang dilakukan.
+     * @param array $context Data tambahan terkait aksi (misal: nama kapal, voyage).
+     */
+    private function logActivityToFirebase(string $action, array $context = [])
+    {
+        // Jangan lakukan apa-apa jika koneksi database Firebase tidak ada
+        if (!$this->database) {
+            return;
+        }
+
+        try {
+            // Mengambil user yang sedang terautentikasi melalui Sanctum/API
+            $user = request()->user();
+            $userName = $user ? $user->name : 'Sistem'; // Fallback jika user tidak ditemukan
+
+            $this->database->getReference($this->dbName)->push([
+                'user' => $userName,
+                'action' => $action,
+                'context' => $context,
+                'timestamp' => Carbon::now()->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            // Catat error ke log Laravel jika pengiriman ke Firebase gagal
+            Log::error('Gagal mengirim log ke Firebase: ' . $e->getMessage());
+        }
+    }
+
     public function index(Request $request)
     {
         $query = Jadwal::query();
@@ -85,6 +141,13 @@ class JadwalController extends Controller
                     ]);
                 }
             });
+
+            // --- LOGGING KE FIREBASE SETELAH SUKSES ---
+            $this->logActivityToFirebase(
+                "Memperbarui Jadwal Voyage",
+                ['kapal' => $namaKapal, 'voyage' => $voyage]
+            );
+
         } catch (\Exception $e) {
             return response()->json(['message' => 'Gagal menyimpan data.', 'error' => $e->getMessage()], 500);
         }
@@ -104,6 +167,11 @@ class JadwalController extends Controller
                             ->delete();
 
         if ($deletedCount > 0) {
+            // --- LOGGING KE FIREBASE SETELAH SUKSES ---
+            $this->logActivityToFirebase(
+                "Menghapus Jadwal Voyage",
+                ['kapal' => $validated['nama_kapal'], 'voyage' => $validated['voyage']]
+            );
             return response()->json(['message' => 'Seluruh jadwal voyage berhasil dihapus.']);
         }
 
