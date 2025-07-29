@@ -141,7 +141,7 @@ function InputJadwalPage() {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }
             );
-            setMessage('Periode docking berhasil disimpan!');            
+            setMessage('Data voyage berhasil disimpan!');            
             
         } catch (err) {
             const errorMessage = err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.';
