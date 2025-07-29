@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, eachDayOfInterval, startOfDay, endOfDay, isWithinInterval, differenceInCalendarDays, isSameDay } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -28,7 +28,7 @@ const PORT_COLORS = {
     'SAUMLAKI': 'bg-rose-300 text-rose-900',
     'SORONG': 'bg-fuchsia-700 text-fuchsia-100',
     'DEFAULT': 'bg-gray-200 text-gray-900'
-    
+
 };
 
 // Fungsi untuk mendapatkan kelas warna berdasarkan nama pelabuhan
@@ -41,17 +41,6 @@ const getPortColorClass = (portName) => {
     return PORT_COLORS[normalizedPortName] || PORT_COLORS.DEFAULT;
 };
 
-
-// ===================================================================
-//  FUNGSI UNTUK MENDETEKSI KONFLIK JADWAL (BARU)                    =
-// ===================================================================
-
-/**
- * Helper untuk mengubah rentang waktu string menjadi menit.
- * Contoh: "12:00-14:00" -> { start: 720, end: 840 }
- * "12:00-"      -> { start: 720, end: 1439 } (akhir hari)
- * "-16:00"      -> { start: 0, end: 960 }   (awal hari)
- */
 const parseTimeRangeToMinutes = (timeString) => {
     if (!timeString.includes('-')) {
         // Jika hanya satu waktu (misal: "12:00"), anggap sebagai durasi singkat (1 menit)
@@ -133,12 +122,17 @@ const findScheduleConflicts = (dataMatriks) => {
             }
         }
     }
-    return conflicts;
+    const uniqueConflicts = [];
+    const seen = new Set();
+    conflicts.forEach(c => {
+        const conflictKey = `${c.date}-${c.port}-${c.kapal.join(',')}`;
+        if (!seen.has(conflictKey)) {
+            seen.add(conflictKey);
+            uniqueConflicts.push(c);
+        }
+    });
+    return uniqueConflicts;
 };
-
-
-
-
 
 // ===================================================
 // BAGIAN 1: FUNGSI UNTUK MENGOLAH DATA JADWAL       =
@@ -273,7 +267,63 @@ const DAFTAR_KAPAL_LENGKAP = [
   "KM. TATAMAILAU", "KM. TIDAR", "KM. TILONGKABILA", "KM. GUNUNG DEMPO", "KM. WILIS"
 ].sort();
 
+const ConflictCard = ({ conflict }) => {
+    // State untuk mengelola apakah kartu ini sedang "diperluas" atau tidak.
+    const [isExpanded, setIsExpanded] = useState(false);
+    const hasMoreThanTwo = conflict.kapal.length > 2;
 
+    return (
+        <div className="bg-white p-4 rounded-lg shadow border border-red-200">
+            {/* Header Kartu (tidak berubah) */}
+            <div className="flex justify-between items-center mb-3 pb-2 border-b">
+                <h3 className="font-bold text-lg text-gray-800">
+                    Konflik di pelabuhan <span className="text-red-600">{conflict.port}</span>
+                </h3>
+                <span className="text-md font-semibold bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                    {conflict.date}
+                </span>
+            </div>
+
+            {/* A. TAMPILAN JIKA TIDAK DIPERLUAS DAN ADA LEBIH DARI 2 KAPAL */}
+            {!isExpanded && hasMoreThanTwo && (
+                <div>
+                    {/* Tampilkan 2 kapal pertama secara berdampingan */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-center mb-3">
+                        {conflict.kapal.slice(0, 2).map((kapal, i) => (
+                            <div key={i} className="bg-red-50 p-3 rounded-lg border border-red-200">
+                                <p className="font-bold text-lg text-red-800">{kapal}</p>
+                                <p className="font-mono text-base text-red-700">{conflict.waktu[i]}</p>
+                            </div>
+                        ))}
+                    </div>
+                    {/* Tombol untuk memperluas */}
+                    <button
+                        onClick={() => setIsExpanded(true)}
+                        className="text-sm font-semibold text-blue-600 hover:text-blue-800 w-full text-center mt-2"
+                    >
+                        + {conflict.kapal.length - 2} Kapal Lainnya...
+                    </button>
+                </div>
+            )}
+
+            {/* B. TAMPILAN JIKA KURANG DARI 3 KAPAL ATAU SUDAH DIPERLUAS */}
+            {(!hasMoreThanTwo || isExpanded) && (
+                 <div className="space-y-2">
+                    {conflict.kapal.map((kapal, i) => (
+                        <div key={i} className="flex justify-between items-center bg-red-50 p-3 rounded-lg border border-red-200">
+                            <p className="font-bold text-lg text-red-800">{kapal}</p>
+                            <p className="font-mono text-base text-red-700">{conflict.waktu[i]}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ===================================================
+// KOMPONEN UTAMA                                     =
+// ===================================================
 function PlanPreviewPage() {
     const [processedData, setProcessedData] = useState({ dataMatriks: {}, dateHeaders: [], kapalList: [] });
     const [dockingSchedules, setDockingSchedules] = useState([]);
@@ -282,8 +332,40 @@ function PlanPreviewPage() {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
+    // =========================================================================
+    // BAGIAN 1: LOGIKA STATE BARU UNTUK FILTER DAN PENGURUTAN                 =
+    // =========================================================================
+    const [selectedMonth, setSelectedMonth] = useState('Semua');
+
+    const tableContainerRef = useRef(null);
+
+    // Langkah 1: Urutkan konflik berdasarkan tanggal secara kronologis
+    const sortedConflicts = useMemo(() => {
+        return [...conflicts].sort((a, b) => {
+            const dateA = new Date(a.date.replace(/(\d{2})-(\w{3})-(\d{2})/, '$2 $1 20$3'));
+            const dateB = new Date(b.date.replace(/(\d{2})-(\w{3})-(\d{2})/, '$2 $1 20$3'));
+            return dateA - dateB;
+        });
+    }, [conflicts]);
+
+    // Langkah 2: Buat daftar bulan yang tersedia dari data konflik untuk tombol filter
+    const availableMonths = useMemo(() => {
+        const months = new Set(sortedConflicts.map(c => c.date.split('-')[1]));
+        return ['Semua', ...Array.from(months)];
+    }, [sortedConflicts]);
+
+    // Langkah 3: Saring konflik berdasarkan bulan yang dipilih
+    const filteredConflicts = useMemo(() => {
+        if (selectedMonth === 'Semua') {
+            return sortedConflicts;
+        }
+        return sortedConflicts.filter(c => c.date.includes(`-${selectedMonth}-`));
+    }, [selectedMonth, sortedConflicts]);
+
+
     useEffect(() => {
         const fetchDataAndProcess = async () => {
+            // ... (Tidak ada perubahan di dalam useEffect)
             setLoading(true);
             const token = localStorage.getItem('authToken');
             if (!token) { navigate('/login'); return; }
@@ -292,18 +374,11 @@ function PlanPreviewPage() {
                     api.get('/jadwal', { headers: { 'Authorization': `Bearer ${token}` } }),
                     api.get('/docking', { headers: { 'Authorization': `Bearer ${token}` } })
                 ]);
-
-                // Proses data jadwal
                 const data = processJadwalData(jadwalResponse.data, DAFTAR_KAPAL_LENGKAP);
                 setProcessedData(data);
-
-                // Simpan data docking
                 setDockingSchedules(dockingResponse.data);
-
-                // Proses data jadwal kapal yang konflik
                 const foundConflicts = findScheduleConflicts(data.dataMatriks);
                 setConflicts(foundConflicts);
-
             } catch (err) {
                 console.error("Gagal mengambil data jadwal:", err);
                 setError('Gagal mengambil data dari server.');
@@ -314,6 +389,25 @@ function PlanPreviewPage() {
         fetchDataAndProcess();
     }, [navigate]);
 
+    const handleGoToToday = () => {
+        const todayDateKey = format(new Date(), 'dd-MMM-yy', { locale: id });
+        const todayColumn = document.getElementById(`header-${todayDateKey}`);
+
+        if (todayColumn && tableContainerRef.current) {
+            // Kalkulasi posisi scroll
+            const container = tableContainerRef.current;
+            const scrollLeft = todayColumn.offsetLeft - container.offsetLeft - (container.clientWidth / 2) + (todayColumn.clientWidth / 2);
+
+            // Lakukan scroll dengan smooth behavior
+            container.scrollTo({
+                left: scrollLeft,
+                behavior: 'smooth',
+            });
+        } else {
+            alert("Tanggal hari ini tidak ditemukan dalam rentang jadwal.");
+        }
+    };
+
     if (loading) { return <div className="text-center p-8">Memuat data jadwal...</div>; }
     if (error) { return <div className="text-center p-8 text-red-500">{error}</div>; }
 
@@ -323,126 +417,129 @@ function PlanPreviewPage() {
                 const start = new Date(schedule.waktu_mulai_docking);
                 const end = new Date(schedule.waktu_selesai_docking);
                 if (isWithinInterval(startOfDay(date), { start: startOfDay(start), end: startOfDay(end) })) {
-                    return schedule; // Kembalikan seluruh objek schedule jika ada docking
+                    return schedule;
                 }
             }
         }
-        return null; // Kembalikan null jika tidak ada docking
+        return null;
     };
-
     const isCellInConflict = (dateKey, kapal, pelabuhan) => {
-        return conflicts.some(c => 
-            c.date === dateKey && 
-            c.port === pelabuhan && 
-            c.kapal.includes(kapal)
-        );
+        return conflicts.some(c => c.date === dateKey && c.port === pelabuhan && c.kapal.includes(kapal));
     };
 
-    // =================================================================================
     return (
-        <div>
-            <h1 className="text-3xl font-bold mb-6">Plan Preview</h1>
-                <div className="overflow-auto max-h-[80vh] bg-white shadow-md rounded-lg">
-                <table className="table-fixed w-full border-collapse">
-                    <thead className="bg-gray-600 text-white sticky top-0 z-20 border-b">
+    <div>
+        {/* 4. Tambahkan tombol di samping judul */}
+        <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold">Plan Preview</h1>
+            <button
+                onClick={handleGoToToday}
+                className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow"
+            >
+                Ke Hari Ini 📅
+            </button>
+        </div>
+        
+        {/* 5. Pasang ref ke div container tabel */}
+        <div ref={tableContainerRef} className="overflow-auto max-h-[80vh] bg-white shadow-md rounded-lg">
+            <table className="table-fixed w-full border-collapse">
+                <thead className="bg-gray-600 text-white sticky top-0 z-20 border-b">
                     <tr>
                         <th className="w-8 p-2 sticky left-0 bg-gray-600 text-white z-10 shadow-[inset_-1px_0_0_0_#A0AEC0]">NO</th>
                         <th className="w-48 p-2 sticky left-8 bg-gray-600 text-white z-10 shadow-[inset_-1px_0_0_0_#A0AEC0]">NAMA KAPAL</th>
-                        {processedData.dateHeaders.map(date => (
-                        <th key={date} className="border-r w-32 p-2">
-                            <div>{format(date, 'd-MMM-yy', { locale: id })}</div>
-                            <div>{format(date, 'eeee', { locale: id })}</div>
-                        </th>
-                        ))}
+                        {processedData.dateHeaders.map(date => {
+                            const dateKey = format(date, 'dd-MMM-yy', { locale: id });
+                            // 6. Berikan ID unik ke setiap header kolom tanggal
+                            return (
+                                <th key={dateKey} id={`header-${dateKey}`} className="border-r w-32 p-2">
+                                    <div>{format(date, 'd-MMM-yy', { locale: id })}</div>
+                                    <div>{format(date, 'eeee', { locale: id })}</div>
+                                </th>
+                            );
+                        })}
                     </tr>
-                    </thead>
-                    <tbody className="bg-white">
-                    {processedData.kapalList.map((kapal, index) => {
-                        let skipDays = 0;
-                        return (
-                            <tr key={kapal} className="text-center">
-                                <td className="border-b border-black w-8 p-2 sticky left-0 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{index + 1}</td>
-                                <td className="border-b border-black w-48 p-2 sticky left-8 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{kapal}</td>
-                                {processedData.dateHeaders.map(date => {
-                                    
-                                    if (skipDays > 0) {
-                                        skipDays--;
-                                        return null;
+                </thead>
+                <tbody className="bg-white">
+                {processedData.kapalList.map((kapal, index) => {
+                    let skipDays = 0;
+                    return (
+                        <tr key={kapal} className="text-center">
+                            <td className="border-b border-black w-8 p-2 sticky left-0 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{index + 1}</td>
+                            <td className="border-b border-black w-48 p-2 sticky left-8 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{kapal}</td>
+                            {processedData.dateHeaders.map(date => {
+                                if (skipDays > 0) {
+                                    skipDays--;
+                                    return null;
+                                }
+                                const dateKey = format(date, 'dd-MMM-yy', { locale: id });
+                                const dockingInfo = getDockingInfoForCell(kapal, date);
+                                if (dockingInfo) {
+                                    const startDate = startOfDay(new Date(dockingInfo.waktu_mulai_docking));
+                                    if (isSameDay(startOfDay(date), startDate)) {
+                                        const endDate = startOfDay(new Date(dockingInfo.waktu_selesai_docking));
+                                        const colspan = differenceInCalendarDays(endDate, startDate) + 1;
+                                        skipDays = colspan - 1;
+                                        return (
+                                            <td key={dateKey} colSpan={colspan} className="border-b border-r border-black p-1 align-middle bg-black text-white relative">
+                                                <div className="flex items-center justify-center h-full text-3xl font-bold text-center">{dockingInfo.detail_docking}</div>
+                                            </td>
+                                        );
                                     }
-
-                                    const dateKey = format(date, 'dd-MMM-yy', { locale: id });
-                                    const dockingInfo = getDockingInfoForCell(kapal, date);
-
-                                    if (dockingInfo) {
-                                        const startDate = startOfDay(new Date(dockingInfo.waktu_mulai_docking));
-                                        
-                                        if (isSameDay(startOfDay(date), startDate)) {
-                                            const endDate = startOfDay(new Date(dockingInfo.waktu_selesai_docking));
-                                            const colspan = differenceInCalendarDays(endDate, startDate) + 1;
-                                            skipDays = colspan - 1;
-
+                                    return null; 
+                                }
+                                const jadwalDiHariIni = processedData.dataMatriks[kapal]?.[dateKey];
+                                return (
+                                    <td key={dateKey} className="border-b border-r border-black w-32 p-1 align-top">
+                                        {jadwalDiHariIni?.map((item, idx) => {
+                                            const isThisItemInConflict = isCellInConflict(dateKey, kapal, item.pelabuhan);
                                             return (
-                                                <td key={dateKey} colSpan={colspan} className="border-b border-r border-black p-1 align-middle bg-black text-white relative">
-                                                    <div className="flex items-center justify-center h-full text-3xl font-bold text-center">
-                                                        {dockingInfo.detail_docking}
-                                                    </div>
-                                                </td>
+                                                <div key={idx} className={`mb-1 rounded ${isThisItemInConflict ? 'animate-blink' : ''}`}>
+                                                    <div className={`${getPortColorClass(item.pelabuhan)} text-xs font-bold rounded-t p-1`}>{item.pelabuhan}</div>
+                                                    <div className="bg-gray-100 text-xs rounded-b p-1">{item.waktu}</div>
+                                                </div>
                                             );
-                                        }
-                                        return null; 
-                                    }
+                                        })}
+                                    </td>
+                                );
+                            })}
+                        </tr>
+                    );
+                })}
+                </tbody>
+            </table>
+        </div>
 
-                                    const jadwalDiHariIni = processedData.dataMatriks[kapal]?.[dateKey];
-                                    return (
-                                        <td key={dateKey} className="border-b border-r border-black w-32 p-1 align-top">
-                                            {jadwalDiHariIni?.map((item, idx) => {
-                                                const isThisItemInConflict = isCellInConflict(dateKey, kapal, item.pelabuhan);
-                                                return (
-                                                    <div key={idx} className={`mb-1 rounded ${isThisItemInConflict ? 'animate-blink' : ''}`}>
-                                                        <div className={`${getPortColorClass(item.pelabuhan)} text-xs font-bold rounded-t p-1`}>
-                                                            {item.pelabuhan}
-                                                        </div>
-                                                        <div className="bg-gray-100 text-xs rounded-b p-1">
-                                                            {item.waktu}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </td>
-                                    );
-                                })}
-                            </tr>
-                        );
-                    })}
-                    </tbody>
-                </table>
-                </div>
-                {conflicts.length > 0 && (
-                    <div className="mt-10 overflow-auto max-h-[80vh] bg-white shadow-md rounded-lg">
-                        <div className="p-4 bg-yellow-100">
-                        <h2 className="text-xl font-bold text-yellow-800 mb-4">🚨 Peringatan Jadwal Berbenturan</h2>
-                        <div className="space-y-3">
-                            {conflicts.map((c, index) => (
-                                <div key={index} className="bg-white p-3 rounded-lg shadow">
-                                    <p>
-                                        <strong>Pelabuhan:</strong> <span className="font-mono p-1 bg-gray-200 rounded">{c.port}</span>
-                                    </p>
-                                    <p>
-                                        <strong>Tanggal:</strong> <span className="font-mono p-1 bg-gray-200 rounded">{c.date}</span>
-                                    </p>
-                                    <p>
-                                        <strong>Konflik Antara:</strong> {c.kapal.join(' dan ')}
-                                    </p>
-                                    <p className="text-sm mt-1">
-                                        ({c.kapal[0]}: <strong>{c.waktu[0]}</strong> vs {c.kapal[1]}: <strong>{c.waktu[1]}</strong>)
-                                    </p>
-                                </div>
+        {/* --- Bagian Peringatan Konflik (tidak berubah) --- */}
+        {conflicts.length > 0 && (
+            <div className="mt-10">
+                <div className="p-4 bg-yellow-100 rounded-lg shadow-inner">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-yellow-800">🚨 Peringatan Jadwal Berbenturan</h2>
+                        <div className="flex space-x-2 bg-yellow-200 p-1 rounded-lg">
+                            {availableMonths.map(month => (
+                                <button
+                                    key={month}
+                                    onClick={() => setSelectedMonth(month)}
+                                    className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${
+                                        selectedMonth === month
+                                            ? 'bg-yellow-800 text-white shadow'
+                                            : 'text-yellow-900 hover:bg-yellow-300'
+                                    }`}
+                                >
+                                    {month}
+                                </button>
                             ))}
                         </div>
-                        </div>
-                    </div>      
-                )}
-        </div>
+                    </div>
+                    <div className="space-y-4 overflow-y-auto max-h-[70vh] p-1">
+                        {filteredConflicts.map((c, index) => (
+                           <ConflictCard key={index} conflict={c} />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        )}
+    </div>
     );
 }
 
