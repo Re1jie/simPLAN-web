@@ -268,13 +268,12 @@ const DAFTAR_KAPAL_LENGKAP = [
 ].sort();
 
 const ConflictCard = ({ conflict }) => {
-    // State untuk mengelola apakah kartu ini sedang "diperluas" atau tidak.
     const [isExpanded, setIsExpanded] = useState(false);
     const hasMoreThanTwo = conflict.kapal.length > 2;
 
     return (
         <div className="bg-white p-4 rounded-lg shadow border border-red-200">
-            {/* Header Kartu (tidak berubah) */}
+            {/* Header */}
             <div className="flex justify-between items-center mb-3 pb-2 border-b">
                 <h3 className="font-bold text-lg text-gray-800">
                     Konflik di pelabuhan <span className="text-red-600">{conflict.port}</span>
@@ -284,19 +283,19 @@ const ConflictCard = ({ conflict }) => {
                 </span>
             </div>
 
-            {/* A. TAMPILAN JIKA TIDAK DIPERLUAS DAN ADA LEBIH DARI 2 KAPAL */}
+            {/* Jika tidak diperluas dan lebih dari 2 kapal */}
             {!isExpanded && hasMoreThanTwo && (
                 <div>
-                    {/* Tampilkan 2 kapal pertama secara berdampingan */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-center mb-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left mb-3">
                         {conflict.kapal.slice(0, 2).map((kapal, i) => (
                             <div key={i} className="bg-red-50 p-3 rounded-lg border border-red-200">
-                                <p className="font-bold text-lg text-red-800">{kapal}</p>
-                                <p className="font-mono text-base text-red-700">{conflict.waktu[i]}</p>
+                                <p className="font-bold text-red-800 text-lg flex gap-2">
+                                    <span>{kapal}</span>
+                                    <span className="text-red-700 font-mono">: {conflict.waktu[i]}</span>
+                                </p>
                             </div>
                         ))}
                     </div>
-                    {/* Tombol untuk memperluas */}
                     <button
                         onClick={() => setIsExpanded(true)}
                         className="text-sm font-semibold text-blue-600 hover:text-blue-800 w-full text-center mt-2"
@@ -306,13 +305,15 @@ const ConflictCard = ({ conflict }) => {
                 </div>
             )}
 
-            {/* B. TAMPILAN JIKA KURANG DARI 3 KAPAL ATAU SUDAH DIPERLUAS */}
+            {/* Jika diperluas atau jumlah kapal <= 2 */}
             {(!hasMoreThanTwo || isExpanded) && (
-                 <div className="space-y-2">
+                <div className="space-y-2">
                     {conflict.kapal.map((kapal, i) => (
-                        <div key={i} className="flex justify-between items-center bg-red-50 p-3 rounded-lg border border-red-200">
-                            <p className="font-bold text-lg text-red-800">{kapal}</p>
-                            <p className="font-mono text-base text-red-700">{conflict.waktu[i]}</p>
+                        <div key={i} className="bg-red-50 p-3 rounded-lg border border-red-200 mx-10">
+                            <p className="font-bold text-red-800 text-lg flex gap-2">
+                                <span>{kapal}</span>
+                                <span className="text-red-700 font-mono">: {conflict.waktu[i]}</span>
+                            </p>
                         </div>
                     ))}
                 </div>
@@ -320,6 +321,7 @@ const ConflictCard = ({ conflict }) => {
         </div>
     );
 };
+
 
 // ===================================================
 // KOMPONEN UTAMA                                     =
@@ -508,7 +510,7 @@ function PlanPreviewPage() {
                 </tbody>
             </table>
         </div>
-        <div className="mt-5 flex items-center justify-end mb-6 space-x-4">            
+        <div className="mt-6 flex items-center justify-end mb-6 space-x-4">            
             <button
                 onClick={() => {
                     document.getElementById('jadwal-bentrok-section')
@@ -528,7 +530,7 @@ function PlanPreviewPage() {
 
         {/* --- Bagian Peringatan Konflik (tidak berubah) --- */}
         {conflicts.length > 0 && (
-            <div id="jadwal-bentrok-section" className="mt-10">
+            <div id="jadwal-bentrok-section" className="mt-5">
                 <div className="p-4 bg-yellow-100 rounded-lg shadow-inner">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-yellow-800">🚨 Peringatan Jadwal Berbenturan</h2>
@@ -548,7 +550,7 @@ function PlanPreviewPage() {
                             ))}
                         </div>
                     </div>
-                    <div className="space-y-4 overflow-y-auto max-h-[70vh] p-1">
+                    <div className="space-y-4 overflow-y-auto max-h-[78vh] p-1">
                         {filteredConflicts.map((c, index) => (
                            <ConflictCard key={index} conflict={c} />
                         ))}
