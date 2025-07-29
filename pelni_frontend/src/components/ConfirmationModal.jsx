@@ -34,7 +34,7 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, title, children }) {
             onClick={onConfirm}
             className="px-4 py-2 font-bold text-white bg-red-600 rounded-md hover:bg-red-700"
           >
-            Ya, Logout
+            Ya, Lanjutkan
           </button>
         </div>
       </div>
