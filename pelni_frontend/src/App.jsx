@@ -7,6 +7,7 @@ import InputJadwalPage from './pages/InputJadwalPage';
 import LihatJadwalPage from './pages/LihatJadwalPage';
 import PlanPreviewPage from './pages/PlanPreviewPage';
 import InputDockingPage from './pages/InputDockingPage';
+import PlanPublicPage from './pages/PlanPublicPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 
@@ -26,6 +27,7 @@ function App() {
             <Route path="lihat-jadwal" element={<LihatJadwalPage />} />
             <Route path="plan-preview" element={<PlanPreviewPage />} />
             <Route path="input-docking" element={<InputDockingPage />} />
+            <Route path="plan-public" element={<PlanPublicPage />} />
           </Route>
         </Route>
         

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { format, eachDayOfInterval, startOfDay, endOfDay, isWithinInterval, differenceInCalendarDays, isSameDay } from 'date-fns';
 import { id } from 'date-fns/locale';
 import api from '../api';
+import UpdatePlanModal from '../components/UpdatePlanModal';
 
 // Definisikan warna untuk setiap pelabuhan
 const PORT_COLORS = {
@@ -349,10 +350,13 @@ const ConflictCard = ({ conflict }) => {
 // KOMPONEN UTAMA                                     =
 // ===================================================
 function PlanPreviewPage() {
+    const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
     const [processedData, setProcessedData] = useState({ dataMatriks: {}, dateHeaders: [], kapalList: [] });
     const [dockingSchedules, setDockingSchedules] = useState([]);
     const [conflicts, setConflicts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [voyageList, setVoyageList] = useState([]);
+    const [kapalList, setKapalList] = useState([]);
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
@@ -430,6 +434,12 @@ function PlanPreviewPage() {
                 const data = processJadwalData(jadwalResponse.data, DAFTAR_KAPAL_LENGKAP);
                 setProcessedData(data);
                 setDockingSchedules(dockingResponse.data);
+
+                const uniqueVoyages = [...new Set(jadwalResponse.data.map(item => item.voyage))];
+                setVoyageList(uniqueVoyages.sort((a, b) => a - b));
+                const uniqueKapal = [...new Set(jadwalResponse.data.map(item => item.nama_kapal))];
+                setKapalList(uniqueKapal.sort());
+
                 const foundConflicts = findScheduleConflicts(data.dataMatriks);
                 setConflicts(foundConflicts);
             } catch (err) {
@@ -441,6 +451,14 @@ function PlanPreviewPage() {
         };
         fetchDataAndProcess();
     }, [navigate]);
+
+    const handleOpenUpdateModal = () => {
+        setUpdateModalOpen(true);
+    };
+
+    const handleCloseUpdateModal = () => {
+        setUpdateModalOpen(false);
+    };
 
     const handleGoToToday = () => {
         const todayDateKey = format(new Date(), 'dd-MMM-yy', { locale: id });
@@ -572,7 +590,7 @@ function PlanPreviewPage() {
                 Cek Jadwal Bentrok
             </button>
             <button
-                // onClick={handleGoToToday}
+                onClick={handleOpenUpdateModal}
                 className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow"
             >
                 Update ke Plan
@@ -609,6 +627,12 @@ function PlanPreviewPage() {
                 </div>
             </div>
         )}
+        <UpdatePlanModal
+            isOpen={isUpdateModalOpen}
+            onClose={handleCloseUpdateModal}
+            kapalList={kapalList}
+            voyageList={voyageList}
+        />
     </div>
     );
 }

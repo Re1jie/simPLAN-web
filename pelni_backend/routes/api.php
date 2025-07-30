@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\JadwalController;
 use App\Http\Controllers\Api\DockingController;
+use App\Http\Controllers\Api\PlanPublicController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -17,6 +18,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/docking', [DockingController::class, 'store']);
     Route::post('/jadwal/batch', [JadwalController::class, 'storeBatch']);
     Route::delete('/jadwal/by-voyage', [JadwalController::class, 'destroyByVoyage']);
+    Route::get('/plan-public', [PlanPublicController::class, 'index']);
+    Route::post('/plan-public/publish', [PlanPublicController::class, 'publish']);
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 
