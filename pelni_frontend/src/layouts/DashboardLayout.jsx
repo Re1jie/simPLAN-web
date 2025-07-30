@@ -9,7 +9,7 @@ import clsx from "clsx";
 
 // Definisikan komponen logo PELNI
 const PelniLogo = () => (
-    <img src={PelniLogoSVG} alt="Pelni Logo" className="h-10 mt-4" /> // Gunakan className untuk styling
+    <img src={PelniLogoSVG} alt="Pelni Logo" className="h-10 mt-0" /> // Gunakan className untuk styling
 );
 
 const Sidebar = () => {
