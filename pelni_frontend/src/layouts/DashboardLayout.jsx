@@ -151,7 +151,7 @@ const Sidebar = () => {
                         >
                             <NavLink to="/dashboard/input-jadwal" className={submenuClass}>
                                 <LayoutDashboard size={16} />
-                                Input Emplooi
+                                Input Voyage
                             </NavLink>
                             <NavLink to="/dashboard/input-docking" className={submenuClass}>
                                 <Dock size={16} />
