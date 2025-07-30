@@ -12,6 +12,7 @@ function LihatJadwalPage() {
     const [kapalList, setKapalList] = useState([]);
     const [selectedVoyage, setSelectedVoyage] = useState('');
     const [selectedKapal, setSelectedKapal] = useState('');
+    const [availableVoyages, setAvailableVoyages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -33,6 +34,25 @@ function LihatJadwalPage() {
 
         setFilteredJadwal(result);
     }, [selectedVoyage, selectedKapal, allJadwal]);
+
+    // UPDATE VOYAGE LIST BERDASARKAN KAPAL
+    useEffect(() => {
+        if (selectedKapal) {
+            // Filter jadwal yang hanya milik kapal yang dipilih
+            const voyagesForSelectedKapal = allJadwal
+                .filter(item => item.nama_kapal === selectedKapal)
+                .map(item => item.voyage);
+
+            // Ambil voyage unik dan urutkan
+            const uniqueVoyages = [...new Set(voyagesForSelectedKapal)];
+            setAvailableVoyages(uniqueVoyages.sort((a, b) => a - b));
+        } else {
+            // Jika tidak ada kapal yang dipilih, kosongkan daftar voyage
+            setAvailableVoyages([]);
+        }
+        // Reset pilihan voyage setiap kali kapal berubah
+        setSelectedVoyage('');
+    }, [selectedKapal, allJadwal]);
 
     // Grup data berdasarkan kapal & voyage
     useEffect(() => {
@@ -132,6 +152,7 @@ function LihatJadwalPage() {
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-3xl font-bold">Lihat Jadwal</h1>
                     <div className="flex items-center space-x-4">
+                        {/* Filter Kapal */}
                         <div>
                             <label htmlFor="kapalFilter" className="mr-2 text-sm font-medium">
                                 Filter Kapal:
@@ -142,7 +163,7 @@ function LihatJadwalPage() {
                                 onChange={(e) => setSelectedKapal(e.target.value)}
                                 className="rounded-md border-gray-300 shadow-sm"
                             >
-                                <option value="">Semua Kapal</option>
+                                <option value="">-- Pilih Kapal --</option> {/* Ubah teks untuk kejelasan */}
                                 {kapalList.map((k) => (
                                     <option key={k} value={k}>
                                         {k}
@@ -150,6 +171,8 @@ function LihatJadwalPage() {
                                 ))}
                             </select>
                         </div>
+
+                        {/* Filter Voyage (Terkondisi) */}
                         <div>
                             <label htmlFor="voyageFilter" className="mr-2 text-sm font-medium">
                                 Filter Voyage:
@@ -158,10 +181,13 @@ function LihatJadwalPage() {
                                 id="voyageFilter"
                                 value={selectedVoyage}
                                 onChange={(e) => setSelectedVoyage(e.target.value)}
-                                className="rounded-md border-gray-300 shadow-sm"
+                                // Nonaktifkan jika tidak ada kapal yang dipilih
+                                disabled={!selectedKapal}
+                                className="rounded-md border-gray-300 shadow-sm disabled:bg-gray-200 disabled:cursor-not-allowed"
                             >
                                 <option value="">Semua Voyage</option>
-                                {voyageList.map((v) => (
+                                {/* Gunakan availableVoyages sebagai sumber data */}
+                                {availableVoyages.map((v) => (
                                     <option key={v} value={v}>
                                         {v}
                                     </option>
