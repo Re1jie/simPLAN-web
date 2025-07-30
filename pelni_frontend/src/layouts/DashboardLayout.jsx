@@ -46,7 +46,7 @@ const Sidebar = () => {
                         navigate("/login");
                     }
                 }
-            }
+            }2
         };
 
         fetchUserData();
@@ -66,7 +66,7 @@ const Sidebar = () => {
         } catch (error) {
             console.error("Gagal logout di server:", error);
         } finally {
-            sessionlStorage.removeItem("authToken");
+            sessionStorage.removeItem("authToken");
             setUser(null);
             setModalOpen(false);
             navigate("/login");

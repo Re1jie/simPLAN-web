@@ -37,6 +37,7 @@ class AuthController extends Controller
 
         // 4. Jika berhasil, dapatkan data user dan buat token
         $user = $request->user();
+        $user->tokens()->delete();
         $token = $user->createToken('auth-token')->plainTextToken;
 
         // 5. Kirim response sukses beserta token
