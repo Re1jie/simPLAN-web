@@ -1,5 +1,3 @@
-// file: pelni_frontend/src/pages/LihatDockingPage.jsx
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
