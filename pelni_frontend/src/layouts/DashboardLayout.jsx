@@ -3,7 +3,7 @@ import PelniLogoSVG from '../assets/PELNI_2023.svg?url';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { Home, ChevronDown, CalendarDays, Dock, Eye, LayoutDashboard, LogOut } from "lucide-react";
+import { Home, ChevronDown, CalendarDays, Dock, Eye, LayoutDashboard, LogOut, Ship, CalendarClock } from "lucide-react";
 import clsx from "clsx";
 
 
@@ -18,15 +18,19 @@ const Sidebar = () => {
     const [isModalOpen, setModalOpen] = useState(false);
     const [user, setUser] = useState(null);
     const [isInputDropdownOpen, setInputDropdownOpen] = useState(false);
+    const [isLihatDropdownOpen, setLihatDropdownOpen] = useState(false);
 
-    // Jika halaman berada di dalam /dashboard/input-..., otomatis buka dropdown
     const isInputParentActive = location.pathname.startsWith("/dashboard/input-");
+    const isLihatParentActive = location.pathname.startsWith("/dashboard/lihat-");
 
     useEffect(() => {
         if (isInputParentActive) {
             setInputDropdownOpen(true);
         }
-    }, [isInputParentActive]);
+        if (isLihatParentActive) {
+            setLihatDropdownOpen(true);
+        }
+    }, [isInputParentActive, isLihatParentActive]);
 
     // Ambil data user
     useEffect(() => {
@@ -46,7 +50,7 @@ const Sidebar = () => {
                         navigate("/login");
                     }
                 }
-            }2
+            }
         };
 
         fetchUserData();
@@ -93,6 +97,9 @@ const Sidebar = () => {
                 ? "bg-blue-300 text-[#1A2238]"
                 : "text-gray-300 hover:bg-gray-700"
         );
+    
+    // Class untuk tombol dropdown (tidak ada warna aktif)
+    const dropdownButtonClass = "flex w-full items-center justify-between rounded-lg py-2 px-4 font-semibold cursor-pointer transition-colors duration-200 text-[#FBFCFE] hover:bg-gray-700 hover:text-[#D9D9D9]";
 
     return (
         <>
@@ -120,12 +127,7 @@ const Sidebar = () => {
                     <div className="flex flex-col">
                         <button
                             onClick={() => setInputDropdownOpen((prev) => !prev)}
-                            className={clsx(
-                                "flex w-full items-center justify-between rounded-lg py-2 px-4 font-semibold cursor-pointer transition-colors duration-200",
-                                (isInputParentActive || isInputDropdownOpen)
-                                    ? "bg-[#86B6FF] text-[#1A2238]"
-                                    : "text-[#FBFCFE] hover:bg-gray-700 hover:text-[#D9D9D9]"
-                            )}
+                            className={dropdownButtonClass} // <-- PERUBAHAN DI SINI
                         >
                             <span className="flex items-center gap-2">
                                 <CalendarDays size={18} />
@@ -158,10 +160,42 @@ const Sidebar = () => {
                         </div>
                     </div>
 
-                    <NavLink to="/dashboard/lihat-jadwal" className={menuItemClass}>
-                        <Eye size={18} />
-                        Lihat Jadwal
-                    </NavLink>
+                    {/* Dropdown Lihat Jadwal */}
+                    <div className="flex flex-col">
+                        <button
+                            onClick={() => setLihatDropdownOpen((prev) => !prev)}
+                            className={dropdownButtonClass} // <-- PERUBAHAN DI SINI
+                        >
+                            <span className="flex items-center gap-2">
+                                <Eye size={18} />
+                                Lihat Jadwal
+                            </span>
+                            <ChevronDown
+                                className={clsx(
+                                    "h-4 w-4 transform transition-transform duration-200",
+                                    isLihatDropdownOpen && "rotate-180"
+                                )}
+                            />
+                        </button>
+
+                        <div
+                            className={clsx(
+                                "transition-all duration-300 ease-in-out overflow-hidden flex flex-col",
+                                isLihatDropdownOpen
+                                    ? "max-h-40 opacity-100 mt-2"
+                                    : "max-h-0 opacity-0"
+                            )}
+                        >
+                            <NavLink to="/dashboard/lihat-jadwal" className={submenuClass}>
+                                <Ship size={16} />
+                                Jadwal Voyage
+                            </NavLink>
+                            <NavLink to="/dashboard/lihat-docking" className={submenuClass}>
+                                <CalendarClock size={16} />
+                                Jadwal Docking
+                            </NavLink>
+                        </div>
+                    </div>
 
                     <NavLink to="/dashboard/plan-preview" className={menuItemClass}>
                         <LayoutDashboard size={18} />

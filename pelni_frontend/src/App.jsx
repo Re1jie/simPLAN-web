@@ -5,6 +5,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import DashboardPage from './pages/DashboardPage';   
 import InputJadwalPage from './pages/InputJadwalPage';
 import LihatJadwalPage from './pages/LihatJadwalPage';
+import LihatDockingPage from './pages/LihatDockingPage';
 import PlanPreviewPage from './pages/PlanPreviewPage';
 import InputDockingPage from './pages/InputDockingPage';
 import PlanPublicPage from './pages/PlanPublicPage';
@@ -25,6 +26,7 @@ function App() {
             <Route index element={<DashboardPage />} />
             <Route path="input-jadwal" element={<InputJadwalPage />} />
             <Route path="lihat-jadwal" element={<LihatJadwalPage />} />
+            <Route path="lihat-docking" element={<LihatDockingPage />} />
             <Route path="plan-preview" element={<PlanPreviewPage />} />
             <Route path="input-docking" element={<InputDockingPage />} />
             <Route path="plan-public" element={<PlanPublicPage />} />

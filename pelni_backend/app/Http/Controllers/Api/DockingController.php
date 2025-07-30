@@ -32,4 +32,17 @@ class DockingController extends Controller
             'data' => $docking
         ], 201);
     }
+
+    public function destroy($id)
+    {
+        $docking = Docking::find($id);
+
+        if (!$docking) {
+            return response()->json(['message' => 'Data docking tidak ditemukan.'], 404);
+        }
+
+        $docking->delete();
+
+        return response()->json(['message' => 'Data docking berhasil dihapus.']);
+    }
 }
