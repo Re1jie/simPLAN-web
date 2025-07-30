@@ -504,16 +504,35 @@ function PlanPreviewPage() {
         {/* 4. Tambahkan tombol di samping judul */}
         <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold">Plan Preview</h1>
-            <button
-                onClick={handleGoToToday}
-                className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow"
-            >
-                Ke Hari Ini 📅
-            </button>
+            <div className='flex items-center justify-end space-x-4'>
+                <button
+                    onClick={handleGoToToday}
+                    className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow"
+                >
+                    Ke Hari Ini 📅
+                </button>
+                <button
+                    onClick={() => {
+                        document.getElementById('jadwal-bentrok-section')
+                            ?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow"
+                >
+                    Cek Jadwal Bentrok
+                </button>
+                <button
+                    onClick={handleOpenUpdateModal}
+                    className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow"
+                >
+                    Update ke Plan
+                </button>
+            </div>
+            
         </div>
         
+        
         {/* 5. Pasang ref ke div container tabel */}
-        <div ref={tableContainerRef} className="overflow-auto max-h-[80vh] bg-white shadow-md rounded-lg">
+        <div ref={tableContainerRef} className="overflow-auto resize-y h-[80vh] max-h-[100vh] bg-white shadow-md rounded-lg">
             <table className="table-fixed w-full border-collapse">
                 <thead className="bg-gray-600 text-white sticky top-0 z-20 border-b">
                     <tr>
@@ -580,27 +599,10 @@ function PlanPreviewPage() {
                 </tbody>
             </table>
         </div>
-        <div className="mt-6 flex items-center justify-end mb-6 space-x-4">            
-            <button
-                onClick={() => {
-                    document.getElementById('jadwal-bentrok-section')
-                        ?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow"
-            >
-                Cek Jadwal Bentrok
-            </button>
-            <button
-                onClick={handleOpenUpdateModal}
-                className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow"
-            >
-                Update ke Plan
-            </button>
-        </div>
 
         {/* --- Bagian Peringatan Konflik (tidak berubah) --- */}
         {conflicts.length > 0 && (
-            <div id="jadwal-bentrok-section" className="mt-5">
+            <div id="jadwal-bentrok-section" className="mt-10">
                 <div className="p-4 bg-yellow-100 rounded-lg shadow-inner">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-yellow-800">🚨 Peringatan Jadwal Berbenturan</h2>
