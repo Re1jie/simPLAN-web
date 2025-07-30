@@ -108,7 +108,7 @@ const Sidebar = () => {
 
                 {/* Profil */}
                 <div className="mt-8 flex flex-col items-center">
-                    <div className="h-32 w-32 rounded-full bg-gray-400"></div>
+                    <div className="h-24 w-24 rounded-full bg-gray-400"></div>
                     <p className="mt-4 rounded-lg px-4 font-semibold bg-gray-700 text-blue-300">
                         Halo, {user ? user.name : "..."}
                     </p>
