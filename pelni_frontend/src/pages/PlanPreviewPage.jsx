@@ -357,6 +357,7 @@ function PlanPreviewPage() {
     const [loading, setLoading] = useState(true);
     const [voyageList, setVoyageList] = useState([]);
     const [kapalList, setKapalList] = useState([]);
+    const [jadwalData, setJadwalData] = useState([]);
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
@@ -422,7 +423,6 @@ function PlanPreviewPage() {
 
     useEffect(() => {
         const fetchDataAndProcess = async () => {
-            // ... (Tidak ada perubahan di dalam useEffect)
             setLoading(true);
             const token = sessionStorage.getItem('authToken');
             if (!token) { navigate('/login'); return; }
@@ -434,6 +434,7 @@ function PlanPreviewPage() {
                 const data = processJadwalData(jadwalResponse.data, DAFTAR_KAPAL_LENGKAP);
                 setProcessedData(data);
                 setDockingSchedules(dockingResponse.data);
+                setJadwalData(jadwalResponse.data);
 
                 const uniqueVoyages = [...new Set(jadwalResponse.data.map(item => item.voyage))];
                 setVoyageList(uniqueVoyages.sort((a, b) => a - b));
@@ -632,6 +633,7 @@ function PlanPreviewPage() {
             onClose={handleCloseUpdateModal}
             kapalList={kapalList}
             voyageList={voyageList}
+            allJadwal={jadwalData}
         />
     </div>
     );
