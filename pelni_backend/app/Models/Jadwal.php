@@ -21,6 +21,10 @@ class Jadwal extends Model
         'pelabuhan',
         'waktu_tiba',
         'waktu_berangkat',
+        'kecepatan',
+        'jarak',
+        'faktor_pasang_surut',
+        'jam_labuh',
     ];
     protected $casts = [
         'waktu_tiba' => 'datetime',

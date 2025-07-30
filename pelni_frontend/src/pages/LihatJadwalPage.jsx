@@ -1,294 +1,137 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import api from '../api';
-import ConfirmationModal from '../components/ConfirmationModal'; // pastikan path benar
+import dayjs from 'dayjs';
+import 'dayjs/locale/id'; // Import locale Indonesia
+import EditJadwalModal from '../components/EditJadwalModal'; // <-- 1. IMPORT MODAL
+
+dayjs.locale('id'); // Set locale Day.js ke Indonesia
 
 function LihatJadwalPage() {
-    // STATE
-    const [allJadwal, setAllJadwal] = useState([]);
-    const [filteredJadwal, setFilteredJadwal] = useState([]);
-    const [groupedJadwal, setGroupedJadwal] = useState([]);
-    const [voyageList, setVoyageList] = useState([]);
-    const [kapalList, setKapalList] = useState([]);
-    const [selectedVoyage, setSelectedVoyage] = useState('');
-    const [selectedKapal, setSelectedKapal] = useState('');
-    const [availableVoyages, setAvailableVoyages] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [jadwals, setJadwals] = useState({});
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const navigate = useNavigate();
 
-    const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [voyageToDelete, setVoyageToDelete] = useState(null);
+    // <-- 2. STATE UNTUK MENGONTROL MODAL -->
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedVoyage, setSelectedVoyage] = useState(null);
 
-    // LOGIKA FILTER
-    useEffect(() => {
-        let result = allJadwal;
-
-        if (selectedVoyage) {
-            result = result.filter((item) => item.voyage == selectedVoyage);
-        }
-
-        if (selectedKapal) {
-            result = result.filter((item) => item.nama_kapal === selectedKapal);
-        }
-
-        setFilteredJadwal(result);
-    }, [selectedVoyage, selectedKapal, allJadwal]);
-
-    // UPDATE VOYAGE LIST BERDASARKAN KAPAL
-    useEffect(() => {
-        if (selectedKapal) {
-            // Filter jadwal yang hanya milik kapal yang dipilih
-            const voyagesForSelectedKapal = allJadwal
-                .filter(item => item.nama_kapal === selectedKapal)
-                .map(item => item.voyage);
-
-            // Ambil voyage unik dan urutkan
-            const uniqueVoyages = [...new Set(voyagesForSelectedKapal)];
-            setAvailableVoyages(uniqueVoyages.sort((a, b) => a - b));
-        } else {
-            // Jika tidak ada kapal yang dipilih, kosongkan daftar voyage
-            setAvailableVoyages([]);
-        }
-        // Reset pilihan voyage setiap kali kapal berubah
-        setSelectedVoyage('');
-    }, [selectedKapal, allJadwal]);
-
-    // Grup data berdasarkan kapal & voyage
-    useEffect(() => {
-        const groupByKapalAndVoyage = (data) => {
-            return data.reduce((acc, item) => {
-                const key = `${item.nama_kapal}-${item.voyage}`;
+    const fetchJadwals = async () => {
+        try {
+            const response = await api.get('/jadwal');
+            const grouped = response.data.reduce((acc, curr) => {
+                const key = `${curr.nama_kapal}-${curr.voyage}`;
                 if (!acc[key]) {
-                    acc[key] = {
-                        nama_kapal: item.nama_kapal,
-                        voyage: item.voyage,
-                        rute: item.rute,
-                        jadwal: [],
-                    };
+                    acc[key] = [];
                 }
-                acc[key].jadwal.push(item);
+                acc[key].push(curr);
                 return acc;
             }, {});
-        };
-
-        const grouped = groupByKapalAndVoyage(filteredJadwal);
-        setGroupedJadwal(grouped);
-    }, [filteredJadwal]);
-
-    // Ambil data awal
-    const fetchAllJadwal = async () => {
-        const token = sessionStorage.getItem('authToken');
-        if (!token) {
-            navigate('/login');
-            return;
-        }
-        setLoading(true);
-
-        try {
-            const response = await api.get('/jadwal', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            setAllJadwal(response.data);
-            const uniqueVoyages = [...new Set(response.data.map((item) => item.voyage))];
-            const uniqueKapal = [...new Set(response.data.map((item) => item.nama_kapal))];
-
-            setVoyageList(uniqueVoyages.sort((a, b) => a - b));
-            setKapalList(uniqueKapal.sort());
+            setJadwals(grouped);
         } catch (err) {
-            console.error('Gagal mengambil data jadwal:', err);
-            setError('Gagal mengambil data dari server.');
+            setError('Gagal memuat data jadwal.');
+            console.error(err);
         } finally {
-            setLoading(false);
-        }
-    };
-
-    // Buka modal hapus
-    const openDeleteModal = (namaKapal, voyage) => {
-        setVoyageToDelete({ namaKapal, voyage });
-        setDeleteModalOpen(true);
-    };
-
-    // Konfirmasi hapus
-    const confirmDeleteVoyage = async () => {
-        if (!voyageToDelete) return;
-        const { namaKapal, voyage } = voyageToDelete;
-        const token = sessionStorage.getItem('authToken');
-
-        try {
-            await api.delete('/jadwal/by-voyage', {
-                headers: { Authorization: `Bearer ${token}` },
-                data: { nama_kapal: namaKapal, voyage },
-            });
-
-            alert('Jadwal voyage berhasil dihapus.');
-            fetchAllJadwal();
-        } catch (err) {
-            console.error('Gagal menghapus voyage:', err);
-            alert('Terjadi kesalahan saat menghapus data.');
-        } finally {
-            setDeleteModalOpen(false);
-            setVoyageToDelete(null);
+            setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchAllJadwal();
-    }, [navigate]);
+        fetchJadwals();
+    }, []);
 
-    if (loading) {
-        return <div className="text-center p-8">Memuat data jadwal...</div>;
-    }
+    // <-- 3. FUNGSI-FUNGSI UNTUK MENGELOLA MODAL -->
 
-    if (error) {
-        return <div className="text-center p-8 text-red-500">{error}</div>;
-    }
+    /**
+     * Membuka modal edit dan mengirimkan data kapal & voyage yang dipilih.
+     * @param {string} key - Kunci grup, contoh: "KM. AWU-1"
+     */
+    const handleOpenEditModal = (key) => {
+        const [nama_kapal, voyage] = key.split('-');
+        setSelectedVoyage({ nama_kapal, voyage });
+        setIsModalOpen(true);
+    };
 
-    // TAMPILAN
+    /**
+     * Menutup modal edit.
+     */
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedVoyage(null);
+    };
+
+    /**
+     * Callback yang dipanggil setelah data berhasil disimpan di modal.
+     * Ini akan me-refresh data di halaman ini.
+     */
+    const handleSaveSuccess = () => {
+        fetchJadwals(); // Panggil lagi fungsi fetch untuk mendapatkan data terbaru
+    };
+
+
+    if (isLoading) return <div className="text-center mt-10">Memuat data...</div>;
+    if (error) return <div className="text-center mt-10 text-red-500">{error}</div>;
+
     return (
-        <>
-            <div>
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-3xl font-bold">Lihat Jadwal</h1>
-                    <div className="flex items-center space-x-4">
-                        {/* Filter Kapal */}
-                        <div>
-                            <label htmlFor="kapalFilter" className="mr-2 text-sm font-medium">
-                                Filter Kapal:
-                            </label>
-                            <select
-                                id="kapalFilter"
-                                value={selectedKapal}
-                                onChange={(e) => setSelectedKapal(e.target.value)}
-                                className="rounded-md border-gray-300 shadow-sm"
-                            >
-                                <option value="">-- Pilih Kapal --</option> {/* Ubah teks untuk kejelasan */}
-                                {kapalList.map((k) => (
-                                    <option key={k} value={k}>
-                                        {k}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+        <div className="container mx-auto p-4">
+            <h1 className="text-3xl font-bold mb-6">Lihat Semua Jadwal</h1>
+            <div className="space-y-8">
+                {Object.keys(jadwals).map(key => {
+                    const jadwalGroup = jadwals[key];
+                    const { nama_kapal, voyage } = jadwalGroup[0];
 
-                        {/* Filter Voyage (Terkondisi) */}
-                        <div>
-                            <label htmlFor="voyageFilter" className="mr-2 text-sm font-medium">
-                                Filter Voyage:
-                            </label>
-                            <select
-                                id="voyageFilter"
-                                value={selectedVoyage}
-                                onChange={(e) => setSelectedVoyage(e.target.value)}
-                                // Nonaktifkan jika tidak ada kapal yang dipilih
-                                disabled={!selectedKapal}
-                                className="rounded-md border-gray-300 shadow-sm disabled:bg-gray-200 disabled:cursor-not-allowed"
-                            >
-                                <option value="">Semua Voyage</option>
-                                {/* Gunakan availableVoyages sebagai sumber data */}
-                                {availableVoyages.map((v) => (
-                                    <option key={v} value={v}>
-                                        {v}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Daftar Jadwal */}
-                <div className="space-y-6">
-                    {Object.keys(groupedJadwal).length === 0 && !loading ? (
-                        <div className="bg-white p-6 rounded-lg shadow-md text-center">
-                            <p>Belum ada data jadwal atau tidak ada data untuk filter yang dipilih.</p>
-                        </div>
-                    ) : (
-                        Object.values(groupedJadwal).map((group, groupIndex) => (
-                            <div key={groupIndex} className="bg-white rounded-lg shadow-md overflow-hidden">
-                                {/* Header Grup */}
-                                <div className="flex justify-between items-center p-3 bg-gray-50 border-b">
-                                    <div className="flex items-center gap-4">
-                                        <span className="font-bold text-lg text-indigo-700">
-                                            {group.nama_kapal}
-                                        </span>
-                                        <span className="text-sm bg-gray-200 text-gray-800 font-semibold px-2 py-1 rounded-full">
-                                            VOYAGE {group.voyage}
-                                        </span>
-                                        {group.rute && (
-                                            <span className="text-sm bg-green-200 text-green-800 font-semibold px-2 py-1 rounded-full">
-                                                RUTE {group.rute}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <button className="text-sm font-medium text-yellow-600 hover:text-yellow-800">
-                                            Edit
-                                        </button>
-                                        <button
-                                            onClick={() => openDeleteModal(group.nama_kapal, group.voyage)}
-                                            className="text-sm font-medium text-red-600 hover:text-red-800"
-                                        >
-                                            Hapus
-                                        </button>
-                                    </div>
+                    return (
+                        <div key={key} className="bg-white p-6 rounded-lg shadow-md">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-semibold">{nama_kapal} - Voyage {voyage}</h2>
+                                <div>
+                                    {/* <-- 4. TAMBAHKAN ONCLICK PADA TOMBOL EDIT --> */}
+                                    <button
+                                        onClick={() => handleOpenEditModal(key)}
+                                        className="text-blue-500 hover:underline mr-4"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button className="text-red-500 hover:underline">Hapus</button>
                                 </div>
-
-                                {/* Isi Jadwal */}
-                                <ul className="divide-y divide-gray-200">
-                                    {group.jadwal.map((item, index) => (
-                                        <li key={item.id} className="px-4 py-3 flex items-start space-x-4">
-                                            <span className="w-8 pt-1 text-right font-medium text-gray-500">
-                                                {index + 1}.
-                                            </span>
-                                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-4">
-                                                <p className="font-semibold text-gray-800">{item.pelabuhan}</p>
-                                                <div className="text-sm text-gray-600">
-                                                    <span>
-                                                        <span className="font-semibold">Tiba:</span>{' '}
-                                                        {new Date(item.waktu_tiba).toLocaleString('id-ID', {
-                                                            dateStyle: 'medium',
-                                                            timeStyle: 'short',
-                                                            timeZone: 'UTC',
-                                                        })}
-                                                    </span>
-                                                    <span className="mx-2">|</span>
-                                                    <span>
-                                                        <span className="font-semibold">Berangkat:</span>{' '}
-                                                        {item.waktu_berangkat
-                                                            ? new Date(item.waktu_berangkat).toLocaleString('id-ID', {
-                                                                dateStyle: 'medium',
-                                                                timeStyle: 'short',
-                                                                timeZone: 'UTC',
-                                                            })
-                                                            : 'N/A'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
                             </div>
-                        ))
-                    )}
-                </div>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pelabuhan</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Tiba (ETA)</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Berangkat (ETD)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {jadwalGroup.map(jadwal => (
+                                            <tr key={jadwal.id}>
+                                                <td className="px-6 py-4 whitespace-nowrap">{jadwal.pelabuhan}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {dayjs(jadwal.waktu_tiba).format('dddd, DD MMMM YYYY - HH:mm')}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {jadwal.waktu_berangkat ? dayjs(jadwal.waktu_berangkat).format('dddd, DD MMMM YYYY - HH:mm') : 'N/A'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
-            {/* Modal Konfirmasi */}
-            <ConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setDeleteModalOpen(false)}
-                onConfirm={confirmDeleteVoyage}
-                title="Konfirmasi Hapus Jadwal"
-                confirmText="Ya, Hapus"
-            >
-                <p>
-                    Apakah Anda yakin ingin menghapus semua jadwal untuk{' '}
-                    <span className="font-bold">{voyageToDelete?.namaKapal}</span> VOYAGE{' '}
-                    <span className="font-bold">{voyageToDelete?.voyage}</span>?
-                </p>
-            </ConfirmationModal>
-        </>
+            {/* <-- 5. RENDER KOMPONEN MODAL DI SINI --> */}
+            <EditJadwalModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                voyageData={selectedVoyage}
+                onSaveSuccess={handleSaveSuccess}
+            />
+        </div>
     );
 }
 

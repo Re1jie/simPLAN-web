@@ -14,6 +14,7 @@ Route::get('/user', function (Request $request) {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/jadwal', [JadwalController::class, 'index']);
     Route::post('/jadwal', [JadwalController::class, 'store']);
+    Route::put('/jadwal/update', [JadwalController::class, 'update']);
     Route::get('/docking', [DockingController::class, 'index']);
     Route::post('/docking', [DockingController::class, 'store']);
     Route::post('/jadwal/batch', [JadwalController::class, 'storeBatch']);
@@ -21,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/docking/{id}', [DockingController::class, 'destroy']);
     Route::get('/plan-public', [PlanPublicController::class, 'index']);
     Route::post('/plan-public/publish', [PlanPublicController::class, 'publish']);
+    Route::get('/jadwal/{nama_kapal}/{voyage}', [JadwalController::class, 'show']);
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 
