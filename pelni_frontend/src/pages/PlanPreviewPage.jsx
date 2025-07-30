@@ -420,7 +420,7 @@ function PlanPreviewPage() {
         const fetchDataAndProcess = async () => {
             // ... (Tidak ada perubahan di dalam useEffect)
             setLoading(true);
-            const token = localStorage.getItem('authToken');
+            const token = sessionStorage.getItem('authToken');
             if (!token) { navigate('/login'); return; }
             try {
                 const [jadwalResponse, dockingResponse] = await Promise.all([

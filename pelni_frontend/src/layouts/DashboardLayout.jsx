@@ -31,7 +31,7 @@ const Sidebar = () => {
     // Ambil data user
     useEffect(() => {
         const fetchUserData = async () => {
-            const token = localStorage.getItem("authToken");
+            const token = sessionStorage.getItem("authToken");
             if (token) {
                 try {
                     const response = await api.get("/user", {
@@ -53,7 +53,7 @@ const Sidebar = () => {
     }, [navigate]);
 
     const executeLogout = async () => {
-        const token = localStorage.getItem("authToken");
+        const token = sessionStorage.getItem("authToken");
         try {
             await api.post(
                 "/logout",
@@ -66,7 +66,7 @@ const Sidebar = () => {
         } catch (error) {
             console.error("Gagal logout di server:", error);
         } finally {
-            localStorage.removeItem("authToken");
+            sessionlStorage.removeItem("authToken");
             setUser(null);
             setModalOpen(false);
             navigate("/login");

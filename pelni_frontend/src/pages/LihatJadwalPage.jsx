@@ -58,7 +58,7 @@ function LihatJadwalPage() {
 
     // Ambil data awal
     const fetchAllJadwal = async () => {
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         if (!token) {
             navigate('/login');
             return;
@@ -94,7 +94,7 @@ function LihatJadwalPage() {
     const confirmDeleteVoyage = async () => {
         if (!voyageToDelete) return;
         const { namaKapal, voyage } = voyageToDelete;
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
 
         try {
             await api.delete('/jadwal/by-voyage', {

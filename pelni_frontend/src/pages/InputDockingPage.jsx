@@ -53,7 +53,7 @@ function InputDockingPage() {
             return;
         }
 
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         if (!token) {
             navigate('/login');
             return;
@@ -66,7 +66,7 @@ function InputDockingPage() {
                 waktu_selesai_docking: endDateTime,
                 detail_docking: detailDocking,
             }, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('authToken')}` }
             });
             setMessage('Periode docking berhasil disimpan!');
 

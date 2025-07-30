@@ -42,7 +42,7 @@ function LoginPage() {
       console.log('Token Anda:', response.data.token);
       
       // Simpan token ke localStorage untuk digunakan nanti
-      localStorage.setItem('authToken', response.data.token);
+      sessionStorage.setItem('authToken', response.data.token);
       
       // Nanti kita akan redirect ke dashboard
       navigate('/dashboard');

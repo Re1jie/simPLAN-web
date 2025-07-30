@@ -123,7 +123,7 @@ function InputJadwalPage() {
             return;
         }
 
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         if (!token) {
             navigate('/login');
             return;
