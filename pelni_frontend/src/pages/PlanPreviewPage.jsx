@@ -73,7 +73,7 @@ const parseTimeRangeToMinutes = (timeString) => {
 const findScheduleConflicts = (dataMatriks) => {
     const schedulesByPortAndDate = {};
 
-    // Langkah 1: Kelompokkan jadwal berdasarkan tanggal dan pelabuhan
+    // Langkah 1: Kelompokkan jadwal berdasarkan tanggal dan pelabuhan (tidak berubah)
     for (const kapal in dataMatriks) {
         for (const dateKey in dataMatriks[kapal]) {
             if (!schedulesByPortAndDate[dateKey]) {
@@ -92,46 +92,69 @@ const findScheduleConflicts = (dataMatriks) => {
         }
     }
 
-    const conflicts = [];
+    const allConflicts = [];
 
-    // Langkah 2: Iterasi setiap pelabuhan & tanggal, lalu cek tumpang tindih
+    // Langkah 2: Iterasi setiap grup (pelabuhan & tanggal) untuk menemukan grup konflik
     for (const dateKey in schedulesByPortAndDate) {
         for (const pelabuhan in schedulesByPortAndDate[dateKey]) {
             const schedules = schedulesByPortAndDate[dateKey][pelabuhan];
-            if (schedules.length < 2) continue; // Tidak mungkin ada konflik jika < 2 kapal
+            if (schedules.length < 2) continue;
 
-            // Bandingkan setiap pasang jadwal di lokasi yang sama
-            for (let i = 0; i < schedules.length; i++) {
-                for (let j = i + 1; j < schedules.length; j++) {
-                    const scheduleA = schedules[i];
-                    const scheduleB = schedules[j];
+            const n = schedules.length;
+            const parsedTimes = schedules.map(s => parseTimeRangeToMinutes(s.waktu));
 
-                    const timeA = parseTimeRangeToMinutes(scheduleA.waktu);
-                    const timeB = parseTimeRangeToMinutes(scheduleB.waktu);
-
-                    // Kondisi tumpang tindih: (StartA < EndB) and (StartB < EndA)
+            // Buat "adjacency list" untuk merepresentasikan jadwal mana yang tumpang tindih
+            const adj = Array.from({ length: n }, () => []);
+            for (let i = 0; i < n; i++) {
+                for (let j = i + 1; j < n; j++) {
+                    const timeA = parsedTimes[i];
+                    const timeB = parsedTimes[j];
+                    // Jika tumpang tindih, anggap mereka terhubung
                     if (timeA.start < timeB.end && timeB.start < timeA.end) {
-                        conflicts.push({
+                        adj[i].push(j);
+                        adj[j].push(i);
+                    }
+                }
+            }
+
+            // Gunakan pencarian (DFS) untuk menemukan semua grup yang terhubung
+            const visited = Array(n).fill(false);
+            for (let i = 0; i < n; i++) {
+                if (!visited[i]) {
+                    const componentIndices = [];
+                    const stack = [i];
+                    visited[i] = true;
+
+                    while (stack.length > 0) {
+                        const u = stack.pop();
+                        componentIndices.push(u);
+                        for (const v of adj[u]) {
+                            if (!visited[v]) {
+                                visited[v] = true;
+                                stack.push(v);
+                            }
+                        }
+                    }
+                    
+                    // Jika satu grup terhubung memiliki lebih dari 1 kapal, itu adalah konflik
+                    if (componentIndices.length > 1) {
+                        const conflictingSchedules = componentIndices.map(index => schedules[index]);
+                        
+                        // Urutkan kapal berdasarkan nama untuk tampilan yang konsisten
+                        conflictingSchedules.sort((a, b) => a.kapal.localeCompare(b.kapal));
+
+                        allConflicts.push({
                             date: dateKey,
                             port: pelabuhan,
-                            kapal: [scheduleA.kapal, scheduleB.kapal].sort(),
-                            waktu: [scheduleA.waktu, scheduleB.waktu]
+                            kapal: conflictingSchedules.map(s => s.kapal),
+                            waktu: conflictingSchedules.map(s => s.waktu),
                         });
                     }
                 }
             }
         }
     }
-    const uniqueConflicts = [];
-    const seen = new Set();
-    conflicts.forEach(c => {
-        const conflictKey = `${c.date}-${c.port}-${c.kapal.join(',')}`;
-        if (!seen.has(conflictKey)) {
-            seen.add(conflictKey);
-            uniqueConflicts.push(c);
-        }
-    });
-    return uniqueConflicts;
+    return allConflicts;
 };
 
 // ===================================================
@@ -268,15 +291,12 @@ const DAFTAR_KAPAL_LENGKAP = [
 ].sort();
 
 const ConflictCard = ({ conflict }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const hasMoreThanTwo = conflict.kapal.length > 2;
-
     return (
         <div className="bg-white p-4 rounded-lg shadow border border-red-200">
-            {/* Header */}
+            {/* Bagian Header (Tidak Berubah) */}
             <div className="flex justify-between items-center mb-3 pb-2 border-b">
                 <h3 className="font-bold text-lg text-gray-800">
-                    Konflik di pelabuhan <span className="text-red-600">{conflict.port}</span>
+                    Pelabuhan <span className="text-red-600">{conflict.port}</span>
                 </h3>
                 <div className="flex items-center gap-2">
                     <span className="text-md font-semibold bg-gray-200 text-gray-700 px-2 py-1 rounded">
@@ -284,7 +304,6 @@ const ConflictCard = ({ conflict }) => {
                     </span>
                     <button
                         onClick={() => {
-                            // Normalisasi dateKey agar sama formatnya dengan id header di tabel
                             const targetId = `header-${conflict.date}`;
                             const el = document.getElementById(targetId);
                             if (el) {
@@ -304,41 +323,23 @@ const ConflictCard = ({ conflict }) => {
                 </div>
             </div>
 
-            {/* Jika tidak diperluas dan lebih dari 2 kapal */}
-            {!isExpanded && hasMoreThanTwo && (
-                <div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left mb-3">
-                        {conflict.kapal.slice(0, 2).map((kapal, i) => (
-                            <div key={i} className="bg-red-50 p-3 rounded-lg border border-red-200">
-                                <p className="font-bold text-red-800 text-lg flex gap-2">
-                                    <span>{kapal}</span>
-                                    <span className="text-red-700 font-mono">: {conflict.waktu[i]}</span>
-                                </p>
-                            </div>
-                        ))}
+            {/* Bagian Daftar Kapal (Disederhanakan) */}
+            <div className="space-y-2 pt-2">
+                {/* Langsung menampilkan semua kapal dari array `conflict.kapal` */}
+                {conflict.kapal.map((kapal, index) => (
+                    <div key={index} className="bg-red-50 p-3 rounded-lg border border-red-200 mx-5">
+                        <p className="font-bold text-red-800 text-lg flex items-center gap-2">
+                            <span>{kapal}</span>
+                            <span className="text-red-700 font-mono bg-red-100 px-2 py-1 rounded ml-3 flex-shrink-0">
+                                {/* Mengambil waktu yang sesuai dengan indeks kapal */}
+                                {conflict.waktu[index]}
+                            </span>
+                        </p>
                     </div>
-                    <button
-                        onClick={() => setIsExpanded(true)}
-                        className="text-sm font-semibold text-blue-600 hover:text-blue-800 w-full text-center mt-2"
-                    >
-                        + {conflict.kapal.length - 2} Kapal Lainnya...
-                    </button>
-                </div>
-            )}
-
-            {/* Jika diperluas atau jumlah kapal <= 2 */}
-            {(!hasMoreThanTwo || isExpanded) && (
-                <div className="space-y-2">
-                    {conflict.kapal.map((kapal, i) => (
-                        <div key={i} className="bg-red-50 p-3 rounded-lg border border-red-200 mx-10">
-                            <p className="font-bold text-red-800 text-lg flex gap-2">
-                                <span>{kapal}</span>
-                                <span className="text-red-700 font-mono">: {conflict.waktu[i]}</span>
-                            </p>
-                        </div>
-                    ))}
-                </div>
-            )}
+                ))}
+            </div>
+            
+            {/* Tombol "+ N Kapal Lainnya" telah dihapus sepenuhnya */}
         </div>
     );
 };
@@ -362,16 +363,44 @@ function PlanPreviewPage() {
 
     const tableContainerRef = useRef(null);
 
+    /**
+     * Helper function untuk mengubah string 'dd-MMM-yy' menjadi objek Date.
+     * Fungsi ini secara eksplisit memetakan nama bulan dari locale 'id'
+     * untuk memastikan proses sorting berjalan konsisten dan akurat.
+     * @param {string} dateKey - String tanggal, contoh: "30-Jul-25" atau "15-Agu-25".
+     * @returns {Date} - Objek Date yang sesuai.
+     */
+    const parseDateKeyToSortable = (dateKey) => {
+        const monthMap = {
+            'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'Mei': 4, 'Jun': 5,
+            'Jul': 6, 'Agu': 7, 'Sep': 8, 'Okt': 9, 'Nov': 10, 'Des': 11
+        };
+        const parts = dateKey.split('-');
+        if (parts.length !== 3) return new Date(0); // Return tanggal invalid jika format salah
+
+        const day = parseInt(parts[0], 10);
+        const monthIndex = monthMap[parts[1]];
+        const year = parseInt(parts[2], 10) + 2000;
+
+        if (!isNaN(day) && monthIndex !== undefined && !isNaN(year)) {
+            return new Date(year, monthIndex, day);
+        }
+        return new Date(0); // Fallback jika ada bagian yang tidak valid
+    };
+    
     // Langkah 1: Urutkan konflik berdasarkan tanggal secara kronologis
     const sortedConflicts = useMemo(() => {
+        // Buat salinan array conflicts agar state asli tidak termutasi
         return [...conflicts].sort((a, b) => {
-            const dateA = new Date(a.date.replace(/(\d{2})-(\w{3})-(\d{2})/, '$2 $1 20$3'));
-            const dateB = new Date(b.date.replace(/(\d{2})-(\w{3})-(\d{2})/, '$2 $1 20$3'));
+            const dateA = parseDateKeyToSortable(a.date);
+            const dateB = parseDateKeyToSortable(b.date);
+            // Mengurangkan dua objek Date akan menghasilkan selisih dalam milidetik,
+            // yang ideal untuk fungsi sort() untuk pengurutan kronologis.
             return dateA - dateB;
         });
     }, [conflicts]);
 
-    // Langkah 2: Buat daftar bulan yang tersedia dari data konflik untuk tombol filter
+    // Langkah 2: Buat daftar bulan yang tersedia dari data konflik yang sudah urut
     const availableMonths = useMemo(() => {
         const months = new Set(sortedConflicts.map(c => c.date.split('-')[1]));
         return ['Semua', ...Array.from(months)];
@@ -380,8 +409,9 @@ function PlanPreviewPage() {
     // Langkah 3: Saring konflik berdasarkan bulan yang dipilih
     const filteredConflicts = useMemo(() => {
         if (selectedMonth === 'Semua') {
-            return sortedConflicts;
+            return sortedConflicts; // Kembalikan semua konflik yang sudah diurutkan
         }
+        // Filter dari array yang sudah diurutkan
         return sortedConflicts.filter(c => c.date.includes(`-${selectedMonth}-`));
     }, [selectedMonth, sortedConflicts]);
 
@@ -545,7 +575,7 @@ function PlanPreviewPage() {
                 // onClick={handleGoToToday}
                 className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow"
             >
-                Push ke Plan
+                Update ke Plan
             </button>
         </div>
 
