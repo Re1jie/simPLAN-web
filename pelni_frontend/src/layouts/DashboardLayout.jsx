@@ -3,7 +3,21 @@ import PelniLogoSVG from '../assets/PELNI_2023.svg?url';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { Home, ChevronDown, CalendarDays, Dock, Eye, LayoutDashboard, LogOut, Ship, CalendarClock, Menu, X } from "lucide-react";
+import {
+    Home,
+    ChevronDown,
+    CalendarDays,
+    Dock,
+    Eye,
+    LayoutDashboard,
+    LogOut,
+    Ship,
+    CalendarClock,
+    Menu,
+    X,
+    ChartNoAxesGantt,
+    Route,
+} from "lucide-react";
 import clsx from "clsx";
 
 
@@ -19,9 +33,11 @@ const Sidebar = () => {
     const [user, setUser] = useState(null);
     const [isInputDropdownOpen, setInputDropdownOpen] = useState(false);
     const [isLihatDropdownOpen, setLihatDropdownOpen] = useState(false);
+    const [isPlanDropdownOpen, setPlanDropdownOpen] = useState(false);
 
     const isInputParentActive = location.pathname.startsWith("/dashboard/input-");
     const isLihatParentActive = location.pathname.startsWith("/dashboard/lihat-");
+    const isPlanParentActive = location.pathname.startsWith("/dashboard/plan-");
 
     useEffect(() => {
         if (isInputParentActive) {
@@ -29,6 +45,9 @@ const Sidebar = () => {
         }
         if (isLihatParentActive) {
             setLihatDropdownOpen(true);
+        }
+        if (isPlanParentActive) {
+            setPlanDropdownOpen(true);
         }
     }, [isInputParentActive, isLihatParentActive]);
 
@@ -197,15 +216,42 @@ const Sidebar = () => {
                         </div>
                     </div>
 
-                    <NavLink to="/dashboard/plan-preview" className={menuItemClass}>
-                        <LayoutDashboard size={18} />
-                        Plan (Copy)
-                    </NavLink>
 
-                    <NavLink to="/dashboard/plan-public" className={menuItemClass}>
-                        <LayoutDashboard size={18} />
-                        Plan (Public)
-                    </NavLink>
+                    <div className="flex flex-col">
+                        <button
+                            onClick={() => setPlanDropdownOpen((prev) => !prev)}
+                            className={dropdownButtonClass}
+                        >
+                            <span className="flex items-center gap-2">
+                                <Route size={18} />
+                                Lihat Plan
+                            </span>
+                            <ChevronDown
+                                className={clsx(
+                                    "h-4 w-4 transform transition-transform duration-200",
+                                    isPlanDropdownOpen && "rotate-180"
+                                )}
+                            />
+                        </button>
+
+                        <div
+                            className={clsx(
+                                "transition-all duration-300 ease-in-out overflow-hidden flex flex-col",
+                                isPlanDropdownOpen
+                                    ? "max-h-40 opacity-100 mt-2"
+                                    : "max-h-0 opacity-0"
+                            )}
+                        >
+                            <NavLink to="/dashboard/plan-preview" className={submenuClass}>
+                                <ChartNoAxesGantt size={16} />
+                                Plan (Copy)
+                            </NavLink>
+                            <NavLink to="/dashboard/plan-public" className={submenuClass}>
+                                <ChartNoAxesGantt size={16} />
+                                Plan (Public)
+                            </NavLink>
+                        </div>
+                    </div>
                 </nav>
 
                 <div className="flex-grow" />

@@ -1,20 +1,26 @@
 import React from 'react';
 
-function ConfirmationModal({ isOpen, onClose, onConfirm, title, children }) {
+function ConfirmationModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  children,
+  confirmText = "Ya, Lanjutkan", // Default text
+  confirmButtonClass = "bg-red-600 hover:bg-red-700" // Default class (merah)
+}) {
   if (!isOpen) {
     return null;
   }
 
   return (
-    // Latar belakang gelap (overlay)
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-      onClick={onClose} // Menutup modal jika area luar diklik
+      onClick={onClose}
     >
-      {/* Kontainer Modal */}
       <div 
         className="relative w-full max-w-md p-6 bg-white rounded-lg shadow-xl"
-        onClick={(e) => e.stopPropagation()} // Mencegah penutupan modal saat kontennya diklik
+        onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
         
@@ -22,7 +28,6 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, title, children }) {
           {children}
         </div>
 
-        {/* Tombol Aksi */}
         <div className="flex justify-end mt-6 space-x-4">
           <button
             onClick={onClose}
@@ -32,9 +37,10 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, title, children }) {
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 font-bold text-white bg-red-600 rounded-md hover:bg-red-700"
+            // Gunakan props untuk menentukan class dan teks tombol
+            className={`px-4 py-2 font-bold text-white rounded-md ${confirmButtonClass}`}
           >
-            Ya, Lanjutkan
+            {confirmText}
           </button>
         </div>
       </div>

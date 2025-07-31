@@ -23,11 +23,24 @@ const formatDate = (dateString) => {
 };
 
 
-function UpdatePlanModal({ isOpen, onClose, kapalList, allJadwal }) {
+function UpdatePlanModal({ isOpen, onClose, kapalList, allJadwal, initialData }) {
     const [selectedKapal, setSelectedKapal] = useState('');
     const [selectedVoyage, setSelectedVoyage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [availableVoyages, setAvailableVoyages] = useState([]);
+
+    useEffect(() => {
+        // Jika modal dibuka dan ada data awal
+        if (isOpen && initialData) {
+            setSelectedKapal(initialData.namaKapal);
+            setSelectedVoyage(initialData.voyage);
+        }
+        // Reset saat modal ditutup
+        if (!isOpen) {
+            setSelectedKapal('');
+            setSelectedVoyage('');
+        }
+    }, [isOpen, initialData]);
 
     useEffect(() => {
         if (selectedKapal && allJadwal) {
