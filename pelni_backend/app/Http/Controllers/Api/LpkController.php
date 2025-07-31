@@ -1,21 +1,17 @@
 <?php
 
-namespace App\Http\Controllers\Api; // Pastikan namespace-nya Api
+namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller; // Controller dasar
+use App\Http\Controllers\Controller;
 use App\Models\Perjalanan;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class LpkController extends Controller
 {
-    /**
-     * Menerima, mem-parsing, dan menyimpan data LPK dari API request.
-     */
     public function store(Request $request)
     {
-        // 1. Validasi: Ini tetap sama
         $validated = $request->validate([
             'nama_kapal' => 'required|string|max:100',
             'voyage' => 'required|string|max:50',
@@ -24,13 +20,18 @@ class LpkController extends Controller
 
         $lines = explode("\n", trim($validated['lpk_data']));
         $parsedCount = 0;
+        $errorLines = [];
 
-        // 2. Logika Parsing: Ini tetap sama
-        foreach ($lines as $line) {
+        foreach ($lines as $index => $line) {
             if (empty(trim($line))) continue;
 
-            $parts = preg_split('/\s+/', trim($line));
-            $data = $this->parseLine($parts);
+            // Memecah baris berdasarkan TAB, bukan spasi. Ini kuncinya.
+            $dataParts = explode("\t", $line);
+
+            // Trim setiap bagian untuk menghilangkan spasi ekstra
+            $dataParts = array_map('trim', $dataParts);
+
+            $data = $this->parseLine($dataParts);
 
             if ($data) {
                 Perjalanan::create([
@@ -46,78 +47,74 @@ class LpkController extends Controller
                     'jarak_tempuh' => $data['jarak_tempuh'],
                 ]);
                 $parsedCount++;
+            } else {
+                $errorLines[] = $index + 1;
             }
         }
 
-        // 3. Respons: INI BAGIAN YANG BERUBAH
         if ($parsedCount > 0) {
-            // Mengembalikan respons JSON dengan status 201 (Created)
-            return response()->json(['message' => "Berhasil menyimpan {$parsedCount} data perjalanan."], 201);
+            $message = "Berhasil menyimpan {$parsedCount} data perjalanan.";
+            if (!empty($errorLines)) {
+                $message .= " Gagal memproses baris: " . implode(', ', $errorLines) . ". Periksa log untuk detail.";
+            }
+            return response()->json(['message' => $message], 201);
         }
 
-        // Jika tidak ada data yang berhasil diproses
-        return response()->json(['message' => 'Tidak ada data yang dapat diproses atau format tidak sesuai.'], 400);
+        return response()->json([
+            'message' => 'Tidak ada data yang dapat diproses. Pastikan format data dari Excel sudah benar.'
+        ], 400);
     }
 
     /**
-     * Helper function untuk mem-parsing satu baris data.
-     * Logika ini tidak berubah.
+     * Fungsi parsing yang jauh lebih robust, dirancang untuk data dari Excel.
      */
     private function parseLine(array $parts): ?array
     {
+        // Total kolom dari data mentah Anda adalah 15
+        if (count($parts) < 14) {
+             Log::warning('LPK Parsing Failed: Jumlah kolom kurang dari 14.', ['parts' => $parts]);
+             return null;
+        }
+
         try {
-            // Mengidentifikasi jumlah kolom untuk menentukan format
-            // Pola yang mungkin: [PortA, PortB, TglTD, JamTD, TglTA, JamTA, Hari, Jam, Jarak, Kecepatan] -> 10 kolom
-            // Atau dengan faktor labuh -> 16 kolom
-            // Namun, karena ada nama pelabuhan seperti "Tg. Priok", kita tidak bisa hanya mengandalkan spasi
-            // Kita harus bekerja dari kanan ke kiri karena formatnya lebih konsisten
+            // Akses data berdasarkan indeks kolom yang pasti
+            $pelabuhanDari = $parts[0];
+            $pelabuhanKe = $parts[1];
+            $waktuBerangkat = Carbon::createFromFormat('d-M-y H:i', $parts[2] . ' ' . $parts[3]);
+            $waktuTiba = Carbon::createFromFormat('d-M-y H:i', $parts[4] . ' ' . $parts[5]);
 
-            // Kolom terakhir adalah kecepatan_rata, kedua terakhir adalah jarak_tempuh
-            // Kita akan abaikan data kalkulasi dari input
+            $faktorLabuhMulai = null;
+            $faktorLabuhSelesai = null;
+            $totalFaktorLabuhMenit = $this->timeToMinutes($parts[12]); // Kolom ke-13 (indeks 12)
+            $jarakTempuh = (int) $parts[13]; // Kolom ke-14 (indeks 13)
 
-            $kecepatan_rata = array_pop($parts);
-            $jarak_tempuh = array_pop($parts);
-
-            // Kolom-kolom sisanya adalah data konstan yang akan kita proses
-            $kolomData = count($parts);
-
-            if ($kolomData === 8) { // Tanpa faktor labuh
-                 return [
-                    'pelabuhan_dari' => $parts[0] . (isset($parts[1]) && !preg_match('/^\d{2}-/', $parts[1]) ? ' ' . array_splice($parts, 1, 1)[0] : ''),
-                    'pelabuhan_ke' => $parts[1] . (isset($parts[2]) && !preg_match('/^\d{2}-/', $parts[2]) ? ' ' . array_splice($parts, 2, 1)[0] : ''),
-                    'waktu_berangkat' => Carbon::createFromFormat('d-M-y H:i', $parts[2] . ' ' . $parts[3]),
-                    'waktu_tiba' => Carbon::createFromFormat('d-M-y H:i', $parts[4] . ' ' . $parts[5]),
-                    'faktor_labuh_mulai' => null,
-                    'faktor_labuh_selesai' => null,
-                    'total_faktor_labuh_menit' => $this->timeToMinutes($parts[7]),
-                    'jarak_tempuh' => (int) $jarak_tempuh,
-                ];
-            } elseif ($kolomData === 12) { // Dengan faktor labuh
-                return [
-                    'pelabuhan_dari' => $parts[0] . (isset($parts[1]) && !preg_match('/^\d{2}-/', $parts[1]) ? ' ' . array_splice($parts, 1, 1)[0] : ''),
-                    'pelabuhan_ke' => $parts[1] . (isset($parts[2]) && !preg_match('/^\d{2}-/', $parts[2]) ? ' ' . array_splice($parts, 2, 1)[0] : ''),
-                    'waktu_berangkat' => Carbon::createFromFormat('d-M-y H:i', $parts[2] . ' ' . $parts[3]),
-                    'waktu_tiba' => Carbon::createFromFormat('d-M-y H:i', $parts[4] . ' ' . $parts[5]),
-                    'faktor_labuh_mulai' => Carbon::createFromFormat('d-M-y H:i', $parts[6] . ' ' . $parts[7]),
-                    'faktor_labuh_selesai' => Carbon::createFromFormat('d-M-y H:i', $parts[8] . ' ' . $parts[9]),
-                    'total_faktor_labuh_menit' => $this->timeToMinutes($parts[11]),
-                    'jarak_tempuh' => (int) $jarak_tempuh,
-                ];
+            // Cek apakah ada data faktor labuh (tanggal dan waktu tidak kosong)
+            // Kolom 6, 7, 8, 9
+            if (!empty($parts[6]) && !empty($parts[7]) && !empty($parts[8]) && !empty($parts[9])) {
+                $faktorLabuhMulai = Carbon::createFromFormat('d-M-y H:i', $parts[6] . ' ' . $parts[7]);
+                $faktorLabuhSelesai = Carbon::createFromFormat('d-M-y H:i', $parts[8] . ' ' . $parts[9]);
             }
 
-            return null; // Format tidak dikenali
+            return [
+                'pelabuhan_dari' => $pelabuhanDari,
+                'pelabuhan_ke' => $pelabuhanKe,
+                'waktu_berangkat' => $waktuBerangkat,
+                'waktu_tiba' => $waktuTiba,
+                'faktor_labuh_mulai' => $faktorLabuhMulai,
+                'faktor_labuh_selesai' => $faktorLabuhSelesai,
+                'total_faktor_labuh_menit' => $totalFaktorLabuhMenit,
+                'jarak_tempuh' => $jarakTempuh,
+            ];
 
         } catch (\Exception $e) {
-            // Jika ada error (misal: format tanggal salah), abaikan baris ini
-            Log::error('LPK Parsing Error: ' . $e->getMessage() . ' on line: ' . implode(' ', $parts));
+            // Catat error ke log untuk debugging jika terjadi kesalahan tak terduga
+            Log::error('LPK Parsing Exception: ' . $e->getMessage(), [
+                'line_data' => implode("\t", $parts)
+            ]);
             return null;
         }
     }
 
-    /**
-     * Helper untuk konversi 'HH:MM' ke total menit.
-     * Logika ini tidak berubah.
-     */
     private function timeToMinutes(string $time): int
     {
         if (!str_contains($time, ':')) return 0;
