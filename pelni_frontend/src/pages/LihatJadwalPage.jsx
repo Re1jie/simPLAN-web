@@ -149,9 +149,8 @@ function LihatJadwalPage() {
     return (
         <>
             <div>
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-3xl font-bold">Lihat Jadwal</h1>
-                    <div className="flex items-center space-x-4">
+                <div className="flex justify-center items-center mb-6">
+                    <div className="flex items-center space-x-4 p-4 bg-white rounded-lg shadow-md">
                         {/* Filter Kapal */}
                         <div>
                             <label htmlFor="kapalFilter" className="mr-2 text-sm font-medium">
@@ -163,7 +162,7 @@ function LihatJadwalPage() {
                                 onChange={(e) => setSelectedKapal(e.target.value)}
                                 className="rounded-md border-gray-300 shadow-sm"
                             >
-                                <option value="">-- Pilih Kapal --</option> {/* Ubah teks untuk kejelasan */}
+                                <option value="">-- Pilih Kapal --</option>
                                 {kapalList.map((k) => (
                                     <option key={k} value={k}>
                                         {k}
@@ -181,12 +180,10 @@ function LihatJadwalPage() {
                                 id="voyageFilter"
                                 value={selectedVoyage}
                                 onChange={(e) => setSelectedVoyage(e.target.value)}
-                                // Nonaktifkan jika tidak ada kapal yang dipilih
                                 disabled={!selectedKapal}
                                 className="rounded-md border-gray-300 shadow-sm disabled:bg-gray-200 disabled:cursor-not-allowed"
                             >
                                 <option value="">Semua Voyage</option>
-                                {/* Gunakan availableVoyages sebagai sumber data */}
                                 {availableVoyages.map((v) => (
                                     <option key={v} value={v}>
                                         {v}

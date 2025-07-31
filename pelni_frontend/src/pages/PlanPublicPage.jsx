@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react'; // Pastikan useRef diimpor
 import { useNavigate } from 'react-router-dom';
 import { format, eachDayOfInterval, startOfDay, endOfDay, isWithinInterval, differenceInCalendarDays, isSameDay } from 'date-fns';
 import { id } from 'date-fns/locale';
 import api from '../api';
 
-// Definisikan warna untuk setiap pelabuhan (sudah benar)
+// Definisikan warna untuk setiap pelabuhan (konsisten dengan PlanPreviewPage)
 const PORT_COLORS = {
     'SURABAYA': 'bg-green-200 text-green-900',
     'TG. PRIOK': 'bg-red-600 text-white',
@@ -30,14 +30,14 @@ const PORT_COLORS = {
     'DEFAULT': 'bg-gray-200 text-gray-900'
 };
 
-// Fungsi untuk mendapatkan kelas warna (sudah benar)
+// Fungsi untuk mendapatkan kelas warna
 const getPortColorClass = (portName) => {
     if (!portName) return PORT_COLORS.DEFAULT;
     const normalizedPortName = portName.toUpperCase();
     return PORT_COLORS[normalizedPortName] || PORT_COLORS.DEFAULT;
 };
 
-// Fungsi untuk memproses data jadwal (sudah benar)
+// Fungsi untuk memproses data jadwal
 const processJadwalData = (jadwal, allShipNames) => {
     if (!jadwal || jadwal.length === 0) {
         return { dataMatriks: {}, dateHeaders: [], kapalList: allShipNames };
@@ -90,7 +90,7 @@ const processJadwalData = (jadwal, allShipNames) => {
     const allDates = finalJadwal.flatMap(item => [
         parseDisplayString(item.waktu_tiba),
         parseDisplayString(item.waktu_berangkat || item.waktu_tiba)
-    ]);
+    ]).filter(Boolean);
 
     if (allDates.length === 0) {
         return { dataMatriks: {}, dateHeaders: [], kapalList: allShipNames.sort() };
@@ -129,7 +129,6 @@ const processJadwalData = (jadwal, allShipNames) => {
     return { dataMatriks, dateHeaders, kapalList: allShipNames.sort() };
 };
 
-// Daftar kapal lengkap (sudah benar)
 const DAFTAR_KAPAL_LENGKAP = [
   "KM. AWU", "KM. BINAIYA", "KM. BUKIT RAYA", "KM. BUKIT SIGUNTANG", "KM. CIREMAI",
   "KM. DOBONSOLO", "KM. DOROLONDA", "KM. EGON", "KFC. JET LINER", "KM. KELIMUTU",
@@ -138,9 +137,6 @@ const DAFTAR_KAPAL_LENGKAP = [
   "KM. TATAMAILAU", "KM. TIDAR", "KM. TILONGKABILA", "KM. GUNUNG DEMPO", "KM. WILIS"
 ].sort();
 
-// ===================================================
-// KOMPONEN UTAMA                                     =
-// ===================================================
 function PlanPublicPage() {
     const [processedData, setProcessedData] = useState({ dataMatriks: {}, dateHeaders: [], kapalList: [] });
     const [dockingSchedules, setDockingSchedules] = useState([]);
@@ -148,6 +144,46 @@ function PlanPublicPage() {
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const tableContainerRef = useRef(null);
+
+    // =========================================================================
+    // AWAL DARI LOGIKA RESIZING (DISALIN DARI PlanPreviewPage.jsx)
+    // =========================================================================
+    const [isResizing, setIsResizing] = useState(false);
+    const [containerHeight, setContainerHeight] = useState('80vh'); // Tinggi awal
+    const resizableContainerRef = useRef(null);
+
+    const handleMouseDown = (e) => {
+        setIsResizing(true);
+        e.preventDefault(); 
+    };
+
+    const handleMouseMove = (e) => {
+        if (!isResizing || !resizableContainerRef.current) return;
+        const newHeight = e.clientY - resizableContainerRef.current.offsetTop;
+        setContainerHeight(`${newHeight}px`);
+    };
+
+    const handleMouseUp = () => {
+        setIsResizing(false);
+    };
+    
+    useEffect(() => {
+        const moveHandler = (e) => handleMouseMove(e);
+        const upHandler = () => handleMouseUp();
+
+        if (isResizing) {
+            window.addEventListener('mousemove', moveHandler);
+            window.addEventListener('mouseup', upHandler);
+        }
+        
+        return () => {
+            window.removeEventListener('mousemove', moveHandler);
+            window.removeEventListener('mouseup', upHandler);
+        };
+    }, [isResizing]); // dependensi diupdate agar lebih aman
+    // =========================================================================
+    // AKHIR DARI LOGIKA RESIZING
+    // =========================================================================
 
     useEffect(() => {
         const fetchData = async () => {
@@ -201,86 +237,100 @@ function PlanPublicPage() {
     };
 
     return (
-    <div>
-        <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold">Plan Public</h1>
-            <button
-                onClick={handleGoToToday}
-                className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow"
-            >
-                Ke Hari Ini 📅
-            </button>
+        // Wrapper utama diubah untuk mencocokkan struktur dari PlanPreviewPage
+        <div className="flex flex-col h-screen max-h-screen p-6 bg-transparent overflow-hidden">
+            <header className="flex-shrink-0 mb-4">
+                <div className="flex justify-between items-center w-full">
+                    <h1 className="text-3xl font-bold text-gray-800">Plan Public</h1>
+                    <div className="flex items-center space-x-3">
+                        <button onClick={handleGoToToday} className="px-4 py-2 text-sm font-semibold bg-white border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-100 transition-colors shadow-sm">
+                            Ke Hari Ini
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            {/* 👇 PERUBAHAN UTAMA DI SINI: MENAMBAHKAN CONTAINER RESIZABLE */}
+            <div ref={resizableContainerRef} className="flex-grow flex flex-col min-h-0">
+                {/* Container ini untuk mengatur tinggi berdasarkan state */}
+                <div style={{ height: containerHeight }} className="min-h-[200px]">
+                     <div className="flex h-full min-h-0">
+                        <main className="flex-1 flex flex-col bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                            <div ref={tableContainerRef} className="flex-grow overflow-auto">
+                                <table className="table-fixed w-full border-collapse">
+                                    <thead className="bg-gray-600 text-white sticky top-0 z-20 border-b">
+                                        <tr>
+                                            <th className="w-8 p-2 sticky left-0 bg-gray-600 text-white z-10 shadow-[inset_-1px_0_0_0_#A0AEC0]">NO</th>
+                                            <th className="w-48 p-2 sticky left-8 bg-gray-600 text-white z-10 shadow-[inset_-1px_0_0_0_#A0AEC0]">NAMA KAPAL</th>
+                                            {processedData.dateHeaders.map(date => {
+                                                const dateKey = format(date, 'dd-MMM-yy', { locale: id });
+                                                return (
+                                                    <th key={dateKey} id={`header-${dateKey}`} className="border-r w-32 p-2">
+                                                        <div>{format(date, 'd-MMM-yy', { locale: id })}</div>
+                                                        <div className="font-normal">{format(date, 'eeee', { locale: id })}</div>
+                                                    </th>
+                                                );
+                                            })}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white">
+                                        {processedData.kapalList.map((kapal, index) => {
+                                            let skipDays = 0;
+                                            return (
+                                                <tr key={kapal} className="text-center">
+                                                    <td className="border-b border-black w-8 p-2 sticky left-0 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{index + 1}</td>
+                                                    <td className="border-b border-black w-48 p-2 sticky left-8 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{kapal}</td>
+                                                    {processedData.dateHeaders.map(date => {
+                                                        if (skipDays > 0) {
+                                                            skipDays--;
+                                                            return null;
+                                                        }
+                                                        const dateKey = format(date, 'dd-MMM-yy', { locale: id });
+                                                        const dockingInfo = getDockingInfoForCell(kapal, date);
+                                                        if (dockingInfo) {
+                                                            const startDate = startOfDay(new Date(dockingInfo.waktu_mulai_docking));
+                                                            if (isSameDay(startOfDay(date), startDate)) {
+                                                                const endDate = startOfDay(new Date(dockingInfo.waktu_selesai_docking));
+                                                                const colspan = differenceInCalendarDays(endDate, startDate) + 1;
+                                                                skipDays = colspan - 1;
+                                                                return (
+                                                                    <td key={dateKey} colSpan={colspan} className="border-b border-r border-black p-1 align-middle bg-black text-white relative">
+                                                                        <div className="flex items-center justify-center h-full text-xl font-bold text-center">{dockingInfo.detail_docking}</div>
+                                                                    </td>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        }
+                                                        const jadwalDiHariIni = processedData.dataMatriks[kapal]?.[dateKey];
+                                                        return (
+                                                            <td key={dateKey} className="border-b border-r border-black w-32 p-1 align-top">
+                                                                {jadwalDiHariIni?.map((item, idx) => (
+                                                                    <div key={idx} className="mb-1 rounded">
+                                                                        <div className={`${getPortColorClass(item.pelabuhan)} text-xs font-bold rounded-t p-1`}>{item.pelabuhan}</div>
+                                                                        <div className="bg-gray-100 text-xs rounded-b p-1">{item.waktu}</div>
+                                                                    </div>
+                                                                ))}
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </main>
+                    </div>
+                </div>
+                
+                {/* 👇 Handle untuk me-resize (disalin dari PlanPreviewPage.jsx) */}
+                <div 
+                    onMouseDown={handleMouseDown}
+                    className="w-full h-2 mt-1 flex-shrink-0 cursor-ns-resize bg-gray-400 hover:bg-blue-500 transition-colors rounded"
+                    title="Tarik untuk mengubah ukuran"
+                />
+            </div>
         </div>
-        
-        <div ref={tableContainerRef} className="overflow-auto max-h-[80vh] bg-white shadow-md rounded-lg">
-            <table className="table-fixed w-full border-collapse">
-                <thead className="bg-gray-600 text-white sticky top-0 z-20 border-b">
-                    <tr>
-                        <th className="w-8 p-2 sticky left-0 bg-gray-600 text-white z-10 shadow-[inset_-1px_0_0_0_#A0AEC0]">NO</th>
-                        <th className="w-48 p-2 sticky left-8 bg-gray-600 text-white z-10 shadow-[inset_-1px_0_0_0_#A0AEC0]">NAMA KAPAL</th>
-                        {processedData.dateHeaders.map(date => {
-                            const dateKey = format(date, 'dd-MMM-yy', { locale: id });
-                            return (
-                                <th key={dateKey} id={`header-${dateKey}`} className="border-r w-32 p-2">
-                                    <div>{format(date, 'd-MMM-yy', { locale: id })}</div>
-                                    <div>{format(date, 'eeee', { locale: id })}</div>
-                                </th>
-                            );
-                        })}
-                    </tr>
-                </thead>
-                <tbody className="bg-white">
-                {processedData.kapalList.map((kapal, index) => {
-                    let skipDays = 0;
-                    return (
-                        <tr key={kapal} className="text-center">
-                            <td className="border-b border-black w-8 p-2 sticky left-0 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{index + 1}</td>
-                            <td className="border-b border-black w-48 p-2 sticky left-8 bg-white z-10 shadow-[inset_-1px_0_0_0_#000]">{kapal}</td>
-                            
-                            {/* ================================================= */}
-                            {/* BAGIAN YANG DIPERBAIKI ADA DI DALAM LOOPING INI   */}
-                            {/* ================================================= */}
-                            {processedData.dateHeaders.map(date => {
-                                if (skipDays > 0) {
-                                    skipDays--;
-                                    return null;
-                                }
-                                const dateKey = format(date, 'dd-MMM-yy', { locale: id });
-                                const dockingInfo = getDockingInfoForCell(kapal, date);
-                                if (dockingInfo) {
-                                    const startDate = startOfDay(new Date(dockingInfo.waktu_mulai_docking));
-                                    if (isSameDay(startOfDay(date), startDate)) {
-                                        const endDate = startOfDay(new Date(dockingInfo.waktu_selesai_docking));
-                                        const colspan = differenceInCalendarDays(endDate, startDate) + 1;
-                                        skipDays = colspan - 1;
-                                        return (
-                                            <td key={dateKey} colSpan={colspan} className="border-b border-r border-black p-1 align-middle bg-black text-white relative">
-                                                <div className="flex items-center justify-center h-full text-3xl font-bold text-center">{dockingInfo.detail_docking}</div>
-                                            </td>
-                                        );
-                                    }
-                                    return null; 
-                                }
-                                const jadwalDiHariIni = processedData.dataMatriks[kapal]?.[dateKey];
-                                return (
-                                    <td key={dateKey} className="border-b border-r border-black w-32 p-1 align-top">
-                                        {jadwalDiHariIni?.map((item, idx) => (
-                                            <div key={idx} className="mb-1 rounded">
-                                                <div className={`${getPortColorClass(item.pelabuhan)} text-xs font-bold rounded-t p-1`}>{item.pelabuhan}</div>
-                                                <div className="bg-gray-100 text-xs rounded-b p-1">{item.waktu}</div>
-                                            </div>
-                                        ))}
-                                    </td>
-                                );
-                                //
-                            })}
-                        </tr>
-                    );
-                })}
-                </tbody>
-            </table>
-        </div>
-    </div>
     );
 }
 

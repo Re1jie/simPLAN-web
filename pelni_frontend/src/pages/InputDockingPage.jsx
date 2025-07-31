@@ -89,7 +89,7 @@ function InputDockingPage() {
 
     return (
         <div>
-            <h1 className="text-3xl font-bold mb-6">Input Periode Docking</h1>
+            <h1 className="text-3xl font-bold text-center mb-6">Input Periode Docking</h1>
 
             {message && (
                 <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-md mb-6" role="alert">

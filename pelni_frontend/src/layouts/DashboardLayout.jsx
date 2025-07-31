@@ -3,7 +3,7 @@ import PelniLogoSVG from '../assets/PELNI_2023.svg?url';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { Home, ChevronDown, CalendarDays, Dock, Eye, LayoutDashboard, LogOut, Ship, CalendarClock } from "lucide-react";
+import { Home, ChevronDown, CalendarDays, Dock, Eye, LayoutDashboard, LogOut, Ship, CalendarClock, Menu, X } from "lucide-react";
 import clsx from "clsx";
 
 
@@ -127,7 +127,7 @@ const Sidebar = () => {
                     <div className="flex flex-col">
                         <button
                             onClick={() => setInputDropdownOpen((prev) => !prev)}
-                            className={dropdownButtonClass} // <-- PERUBAHAN DI SINI
+                            className={dropdownButtonClass}
                         >
                             <span className="flex items-center gap-2">
                                 <CalendarDays size={18} />
@@ -164,7 +164,7 @@ const Sidebar = () => {
                     <div className="flex flex-col">
                         <button
                             onClick={() => setLihatDropdownOpen((prev) => !prev)}
-                            className={dropdownButtonClass} // <-- PERUBAHAN DI SINI
+                            className={dropdownButtonClass}
                         >
                             <span className="flex items-center gap-2">
                                 <Eye size={18} />
@@ -233,10 +233,44 @@ const Sidebar = () => {
 };
 
 function DashboardLayout() {
+    const [isSidebarOpen, setSidebarOpen] = useState(true);
+
     return (
-        <div className="flex h-screen bg-gray-100">
-            <Sidebar />
-            <main className="flex-1 overflow-y-auto p-8">
+        <div className="flex h-screen bg-gray-100 relative">
+            {/* Sidebar */}
+            <div
+                className={clsx(
+                    "fixed top-0 left-0 h-full z-20 transition-transform duration-300 ease-in-out",
+                    {
+                        "translate-x-0 w-64": isSidebarOpen,
+                        "-translate-x-full w-64": !isSidebarOpen,
+                    }
+                )}
+            >
+                <Sidebar />
+            </div>
+
+            {/* Tombol Toggle Sidebar */}
+            <button
+                onClick={() => setSidebarOpen(!isSidebarOpen)}
+                className="fixed top-4 left-4 z-30 p-2 bg-gray-800 text-white rounded-full hover:bg-gray-700 transition-all duration-300 ease-in-out"
+                style={{
+                    left: isSidebarOpen ? "272px" : "16px", // 256 + 16
+                }}
+            >
+                {isSidebarOpen ? <X size={16} /> : <Menu size={16} />}
+            </button>
+
+            {/* Main Content */}
+            <main
+                className={clsx(
+                    "flex-1 overflow-y-auto p-8 transition-all duration-300 ease-in-out",
+                    {
+                        "ml-64": isSidebarOpen,
+                        "ml-0": !isSidebarOpen,
+                    }
+                )}
+            >
                 <Outlet />
             </main>
         </div>

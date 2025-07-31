@@ -86,7 +86,7 @@ function LihatDockingPage() {
     return (
         <>
             <div>
-                <h1 className="text-3xl font-bold mb-6">Jadwal Docking Kapal</h1>
+                <h1 className="text-3xl font-bold mb-6 text-center">Jadwal Docking Kapal</h1>
 
                 <div className="bg-white rounded-lg shadow-md overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200">
