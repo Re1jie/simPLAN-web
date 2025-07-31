@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\JadwalController;
 use App\Http\Controllers\Api\DockingController;
 use App\Http\Controllers\Api\PlanPublicController;
+use App\Http\Controllers\Api\LpkController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -21,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/docking/{id}', [DockingController::class, 'destroy']);
     Route::get('/plan-public', [PlanPublicController::class, 'index']);
     Route::post('/plan-public/publish', [PlanPublicController::class, 'publish']);
+    Route::post('/lpk', [LpkController::class, 'store']);
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 

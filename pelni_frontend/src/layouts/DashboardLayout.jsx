@@ -17,6 +17,7 @@ import {
     X,
     ChartNoAxesGantt,
     Route,
+    Anchor
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -175,6 +176,10 @@ const Sidebar = () => {
                             <NavLink to="/dashboard/input-docking" className={submenuClass}>
                                 <Dock size={16} />
                                 Input Docking
+                            </NavLink>
+                            <NavLink to="/dashboard/input-lpk" className={submenuClass}>
+                                <Anchor size={16} />
+                                Input LPK
                             </NavLink>
                         </div>
                     </div>
