@@ -85,7 +85,7 @@ class LpkController extends Controller
 
             $faktorLabuhMulai = null;
             $faktorLabuhSelesai = null;
-            $totalFaktorLabuhMenit = $this->timeToMinutes($parts[12]); // Kolom ke-13 (indeks 12)
+            $totalFaktorLabuhMenit = $this->calculateTotalLabuhMinutes($parts[11], $parts[12]);
             $jarakTempuh = (int) $parts[13]; // Kolom ke-14 (indeks 13)
 
             // Cek apakah ada data faktor labuh (tanggal dan waktu tidak kosong)
@@ -115,11 +115,29 @@ class LpkController extends Controller
         }
     }
 
-    private function timeToMinutes(string $time): int
+     private function calculateTotalLabuhMinutes(string $dayIndicator, string $time): int
     {
-        if (!str_contains($time, ':')) return 0;
-        $parts = explode(':', $time);
-        if (count($parts) != 2) return 0;
-        return ((int)$parts[0] * 60) + (int)$parts[1];
+        // Langkah 1: Konversi bagian waktu (JJ:MM) ke menit
+        $timeMinutes = 0;
+        if (str_contains($time, ':')) {
+            $parts = explode(':', $time);
+            if (count($parts) == 2) {
+                $timeMinutes = ((int)$parts[0] * 60) + (int)$parts[1];
+            }
+        }
+
+        // Langkah 2: Hitung menit tambahan dari indikator hari
+        $dayValue = (int) $dayIndicator;
+        $dayOffsetMinutes = 0;
+
+        // Jika nilai lebih besar dari 30, hitung selisihnya sebagai hari tambahan
+        // 1 hari = 1440 menit
+        if ($dayValue > 30) {
+            $dayDifference = $dayValue - 30;
+            $dayOffsetMinutes = $dayDifference * 1440;
+        }
+
+        // Langkah 3: Jumlahkan kedua nilai
+        return $dayOffsetMinutes + $timeMinutes;
     }
 }
