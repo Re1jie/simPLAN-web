@@ -85,7 +85,7 @@ function InputLpkPage() {
     return (
         <div>
             <h1 className="text-3xl font-bold text-center mb-6">
-                Input Data LPK (Laporan Posisi Kapal)
+                Input Data LPK
             </h1>
 
             {success && (
