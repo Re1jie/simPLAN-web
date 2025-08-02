@@ -31,8 +31,10 @@ const DAFTAR_KAPAL = [
 ];
 
 function InputLpkPage() {
+    // STATE VARIABLE
     const [namaKapal, setNamaKapal] = useState('');
     const [voyage, setVoyage] = useState('');
+    const [initialWaktuTiba, setInitialWaktuTiba] = useState('');
     const [lpkData, setLpkData] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -45,8 +47,8 @@ function InputLpkPage() {
         setError(null);
         setSuccess(null);
 
-        if (!voyage || !namaKapal || !lpkData) {
-            alert("Silakan isi nomor voyage, nama kapal, dan data jadwal.");
+        if (!voyage || !namaKapal || !lpkData || !initialWaktuTiba) {
+            alert("Silakan isi semua field, termasuk Waktu Tiba Awal.");
             setIsLoading(false);
             return;
         }
@@ -63,6 +65,7 @@ function InputLpkPage() {
                 {
                     nama_kapal: namaKapal,
                     voyage: voyage,
+                    initial_waktu_tiba: initialWaktuTiba,
                     lpk_data: lpkData,
                 },
                 {
@@ -73,6 +76,7 @@ function InputLpkPage() {
             setSuccess('Data LPK berhasil disimpan!');
             setNamaKapal('');
             setVoyage('');
+            setInitialWaktuTiba('');
             setLpkData('');
         } catch (err) {
             setError(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.');
@@ -107,7 +111,8 @@ function InputLpkPage() {
 
             <div className="bg-white p-6 rounded-lg shadow-md">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* ++ UPDATE GRID TO ACCOMMODATE THE NEW FIELD ++ */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <label htmlFor="nama_kapal" className="block text-sm font-medium text-gray-700">Nama Kapal</label>
                             <select
@@ -133,6 +138,23 @@ function InputLpkPage() {
                                 required
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 placeholder="Contoh: 07"
+                            />
+                        </div>
+                        {/* ++ ADD THE NEW DATETIME INPUT FIELD ++ */}
+                        <div>
+                            <label
+                                htmlFor="initial_waktu_tiba"
+                                className="block text-sm font-medium text-gray-700"
+                            >
+                                Waktu Tiba Awal
+                            </label>
+                            <input
+                                type="datetime-local"
+                                id="initial_waktu_tiba"
+                                value={initialWaktuTiba}
+                                onChange={(e) => setInitialWaktuTiba(e.target.value)}
+                                required
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             />
                         </div>
                     </div>
