@@ -10,6 +10,7 @@ import PlanPreviewPage from './pages/PlanPreviewPage';
 import InputDockingPage from './pages/InputDockingPage';
 import PlanPublicPage from './pages/PlanPublicPage';
 import InputLpkPage from './pages/InputLpkPage';
+import LihatOTPPage from './pages/LihatOTPPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 
@@ -31,7 +32,8 @@ function App() {
             <Route path="plan-preview" element={<PlanPreviewPage />} />
             <Route path="input-docking" element={<InputDockingPage />} />
             <Route path="plan-public" element={<PlanPublicPage />} />
-            <Route path='input-lpk' element={<InputLpkPage />} />
+            <Route path='lpk-input' element={<InputLpkPage />} />
+            <Route path="lpk-lihat" element={<LihatOTPPage />} />
           </Route>
         </Route>
         

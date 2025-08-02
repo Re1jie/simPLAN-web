@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\JadwalController;
 use App\Http\Controllers\Api\DockingController;
 use App\Http\Controllers\Api\PlanPublicController;
 use App\Http\Controllers\Api\LpkController;
+use App\Http\Controllers\Api\OtpController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -23,6 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/plan-public', [PlanPublicController::class, 'index']);
     Route::post('/plan-public/publish', [PlanPublicController::class, 'publish']);
     Route::post('/lpk', [LpkController::class, 'store']);
+    Route::get('/otp/{nama_kapal}/{voyage}', [OtpController::class, 'calculateOtp']);
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 

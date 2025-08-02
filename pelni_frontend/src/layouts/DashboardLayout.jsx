@@ -35,10 +35,13 @@ const Sidebar = () => {
     const [isInputDropdownOpen, setInputDropdownOpen] = useState(false);
     const [isLihatDropdownOpen, setLihatDropdownOpen] = useState(false);
     const [isPlanDropdownOpen, setPlanDropdownOpen] = useState(false);
+    const [isLPKDropdownOpen, setLPKDropdownOpen] = useState(false);
 
     const isInputParentActive = location.pathname.startsWith("/dashboard/input-");
     const isLihatParentActive = location.pathname.startsWith("/dashboard/lihat-");
     const isPlanParentActive = location.pathname.startsWith("/dashboard/plan-");
+
+    const isLPKParentActive = location.pathname.startsWith("/dashboard/lpk-");
 
     useEffect(() => {
         if (isInputParentActive) {
@@ -50,7 +53,10 @@ const Sidebar = () => {
         if (isPlanParentActive) {
             setPlanDropdownOpen(true);
         }
-    }, [isInputParentActive, isLihatParentActive]);
+        if (isLPKParentActive) {
+            setLPKDropdownOpen(true)
+        }
+    }, [isInputParentActive, isLihatParentActive, isPlanParentActive, isLPKDropdownOpen]);
 
     // Ambil data user
     useEffect(() => {
@@ -177,10 +183,6 @@ const Sidebar = () => {
                                 <Dock size={16} />
                                 Input Docking
                             </NavLink>
-                            <NavLink to="/dashboard/input-lpk" className={submenuClass}>
-                                <Anchor size={16} />
-                                Input LPK
-                            </NavLink>
                         </div>
                     </div>
 
@@ -221,7 +223,7 @@ const Sidebar = () => {
                         </div>
                     </div>
 
-
+                    {/* Plan Dropdown */}
                     <div className="flex flex-col">
                         <button
                             onClick={() => setPlanDropdownOpen((prev) => !prev)}
@@ -257,6 +259,46 @@ const Sidebar = () => {
                             </NavLink>
                         </div>
                     </div>
+
+
+                    <div className="flex flex-col">
+                        <button
+                            onClick={() => setLPKDropdownOpen((prev) => !prev)}
+                            className={dropdownButtonClass}
+                        >
+                            <span className="flex items-center gap-2">
+                                <Anchor size={18} />
+                                LPK dan OTP
+                            </span>
+                            <ChevronDown
+                                className={clsx(
+                                    "h-4 w-4 transform transition-transform duration-200",
+                                    isLPKDropdownOpen && "rotate-180"
+                                )}
+                            />
+                        </button>
+
+                        <div
+                            className={clsx(
+                                "transition-all duration-300 ease-in-out overflow-hidden flex flex-col",
+                                isLPKDropdownOpen
+                                    ? "max-h-40 opacity-100 mt-2"
+                                    : "max-h-0 opacity-0"
+                            )}
+                        >
+                            <NavLink to="/dashboard/lpk-input" className={submenuClass}>
+                                <Anchor size={16} />
+                                Input LPK
+                            </NavLink>
+                            <NavLink to="/dashboard/lpk-lihat" className={submenuClass}>
+                                <ChartNoAxesGantt size={16} />
+                                Lihat OTP
+                            </NavLink>
+                        </div>
+                    </div>
+
+
+                    
                 </nav>
 
                 <div className="flex-grow" />
