@@ -115,7 +115,7 @@ class LpkController extends Controller
         }
     }
 
-     private function calculateTotalLabuhMinutes(string $dayIndicator, string $time): int
+    private function calculateTotalLabuhMinutes(string $dayIndicator, string $time): int
     {
         // Langkah 1: Konversi bagian waktu (JJ:MM) ke menit
         $timeMinutes = 0;
@@ -126,15 +126,18 @@ class LpkController extends Controller
             }
         }
 
-        // Langkah 2: Hitung menit tambahan dari indikator hari
+        // Langkah 2: Hitung menit tambahan dari indikator hari secara fleksibel
         $dayValue = (int) $dayIndicator;
         $dayOffsetMinutes = 0;
 
-        // Jika nilai lebih besar dari 30, hitung selisihnya sebagai hari tambahan
-        // 1 hari = 1440 menit
-        if ($dayValue > 30) {
+        // Jika menggunakan format lama (nilai >= 30), hitung selisihnya dari 30
+        if ($dayValue >= 30) {
             $dayDifference = $dayValue - 30;
-            $dayOffsetMinutes = $dayDifference * 1440;
+            $dayOffsetMinutes = $dayDifference * 1440; // 1 hari = 1440 menit
+        }
+        // Jika tidak, asumsikan menggunakan format baru (0, 1, 2, dst.)
+        else {
+            $dayOffsetMinutes = $dayValue * 1440;
         }
 
         // Langkah 3: Jumlahkan kedua nilai
