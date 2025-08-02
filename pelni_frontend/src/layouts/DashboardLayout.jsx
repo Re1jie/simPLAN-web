@@ -8,7 +8,7 @@ import {
     ChevronDown,
     CalendarDays,
     Dock,
-    Eye,
+    Wrench,
     LayoutDashboard,
     LogOut,
     Ship,
@@ -118,7 +118,7 @@ const Sidebar = () => {
                 : "text-gray-300 hover:bg-gray-700"
         );
     
-    // Class untuk tombol dropdown (tidak ada warna aktif)
+    // Class untuk tombol dropdown
     const dropdownButtonClass = "flex w-full items-center justify-between rounded-lg py-2 px-4 font-semibold cursor-pointer transition-colors duration-200 text-[#FBFCFE] hover:bg-gray-700 hover:text-[#D9D9D9]";
 
     return (
@@ -191,8 +191,8 @@ const Sidebar = () => {
                             className={dropdownButtonClass}
                         >
                             <span className="flex items-center gap-2">
-                                <Eye size={18} />
-                                Lihat Jadwal
+                                <Wrench size={18} />
+                                Kelola Jadwal
                             </span>
                             <ChevronDown
                                 className={clsx(
